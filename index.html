@@ -1,0 +1,17 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ERH P0 - Kiểm thử cầu nối</title><style>body{font:16px system-ui;margin:auto;max-width:650px;padding:24px;background:#f5f7fb;color:#18263a}.card{background:white;padding:22px;border-radius:14px}input{width:100%;padding:12px;box-sizing:border-box;margin:10px 0}button{padding:12px 18px}#status{white-space:pre-wrap}</style></head><body><div class="card"><h2>ERH – Kiểm thử đường truyền ngoài</h2><p>Chỉ kiểm tra giao diện GitHub Pages có nhận tín hiệu từ Apps Script hay không. Không nhập mã nhân viên, mật khẩu, token.</p><label for="url">URL Web App TEST riêng (không phải App Tổng V10)</label><input id="url" placeholder="https://script.google.com/macros/s/.../exec" spellcheck="false"><button id="run">Kiểm thử</button><p id="status">Chưa kiểm thử</p></div><script>
+let frame=null, expected=null;
+const status=document.getElementById('status');
+window.addEventListener('message',event=>{
+  // Verify both expected origin AND iframe source; never use '*' for receiving secrets.
+  if(!frame||event.source!==frame.contentWindow)return;
+  const allowed=['https://script.google.com','https://script.googleusercontent.com'];
+  if(!allowed.includes(event.origin))return;
+  if(event.data?.kind==='ERH_P0_PROBE'&&event.data?.ok===true)status.textContent='PASS – Đã nhận tín hiệu từ Apps Script TEST. Chưa kiểm thử xác thực hoặc thao tác dữ liệu.';
+});
+document.getElementById('run').addEventListener('click',()=>{
+  const v=document.getElementById('url').value.trim();let u;
+  try{u=new URL(v)}catch(_){status.textContent='URL không hợp lệ';return}
+  if(u.protocol!=='https:'||u.hostname!=='script.google.com'||!/^\/macros\/s\/[^/]+\/exec$/.test(u.pathname)){status.textContent='Chỉ sử dụng URL /macros/s/.../exec của Web App TEST riêng.';return}
+  frame?.remove();frame=document.createElement('iframe');frame.title='ERH P0 Test';frame.style.cssText='position:absolute;left:-9999px;width:1px;height:1px;border:0';frame.src=u.href;document.body.appendChild(frame);status.textContent='Đang thử kết nối. Nếu không PASS, có thể do Google chặn iframe/định tuyến, cần xem Console và Executions.';
+});
+</script></body></html>
