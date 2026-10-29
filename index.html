@@ -4,7 +4,8 @@
 <label for="api">URL Apps Script API TEST riêng</label><input id="api" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
 <button id="ping">1. Kiểm tra kết nối (PING)</button>
 <section id="loginSection"><label for="staff">Mã nhân viên TEST</label><input id="staff" value="TEST01" autocomplete="off" maxlength="40"><label for="password">Mật khẩu TEST</label><input id="password" type="password" autocomplete="off"><button id="login">2. Đăng nhập TEST</button></section>
-<section id="sessionSection" class="hidden"><p id="welcome"></p><div class="tabs"><span>Giao việc (mô phỏng)</span><span>Báo cáo công việc (mô phỏng)</span><span>Báo cáo ngày (mô phỏng)</span></div><button id="check">3. Kiểm tra phiên</button><button id="logout" class="secondary">Đăng xuất</button></section>
+<section id="sessionSection" class="hidden"><p id="welcome"></p><div class="tabs"><span>Giao việc (mô phỏng)</span><span>Báo cáo công việc (mô phỏng)</span><span>Báo cáo ngày (mô phỏng)</span></div><button id="check">3. Kiểm tra phiên</button><button id="logout" class="secondary">Đăng xuất</button>
+<section id="p2e"><h3>4. Kiểm thử API đọc mô phỏng – P2E</h3><p class="note">DỮ LIỆU GIẢ. Không có thao tác ghi hoặc truy cập cơ sở dữ liệu nghiệp vụ.</p><div id="p2eActions"></div><pre id="p2eResult" class="status" style="overflow-x:auto">Chưa gọi API đọc.</pre></section></section>
 <h3>Nhật ký kiểm tra</h3><div id="status" class="status" role="status" aria-live="polite">Chưa kiểm thử.</div><small>Không đọc/ghi dữ liệu nghiệp vụ. Dữ liệu chỉ là tài khoản TEST tách biệt.</small>
 </main></div><script>
 'use strict';
@@ -13,10 +14,23 @@ let sessionToken='',staffName='',busy=false;
 function log(x){$('status').textContent=new Date().toLocaleTimeString('vi-VN')+' · '+x}
 function validApi(){let u;try{u=new URL($('api').value.trim())}catch{throw Error('Hãy nhập URL API TEST hợp lệ.')};if(u.protocol!=='https:'||u.hostname!=='script.google.com'||!/^\/macros\/s\/[\w-]+\/exec$/.test(u.pathname)||u.search)throw Error('Chỉ chấp nhận URL /macros/s/.../exec của Apps Script TEST riêng.');return u.href}
 function makeId(){const a=new Uint8Array(20);crypto.getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('')}
-function request(api,fields={}){return new Promise((resolve,reject)=>{let url;try{url=validApi()}catch(e){reject(e);return}const nonce=makeId(),frame=document.createElement('iframe'),form=document.createElement('form');frame.name='erhT_'+nonce;frame.style.display='none';form.method='POST';form.action=url;form.target=frame.name;form.style.display='none';const values={api,nonce, ...fields};Object.entries(values).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.appendChild(i)});let done=false;function end(err,data){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();setTimeout(()=>frame.remove(),100);err?reject(err):resolve(data)}function onMessage(e){if(!PINNED_ORIGINS.has(e.origin)&&!/^https:\/\/[a-z0-9.-]+\.googleusercontent\.com$/.test(e.origin))return;const d=e.data;if(!d||d.app!=='ERH_ACCESS_ISOLATED_TEST_V1'||d.nonce!==nonce)return;d.ok?end(null,d):end(Error(d.error||'API trả về lỗi'))}window.addEventListener('message',onMessage);document.body.append(frame,form);const timer=setTimeout(()=>end(Error('Hết 20 giây, không nhận được xác nhận API. Kiểm tra Executions của Apps Script TEST.')),20000);form.submit()})}
+function request(api,fields={}){return new Promise((resolve,reject)=>{let url;try{url=validApi()}catch(e){reject(e);return}const nonce=makeId(),frame=document.createElement('iframe'),form=document.createElement('form');frame.name='erhT_'+nonce;frame.style.display='none';form.method='POST';form.action=url;form.target=frame.name;form.style.display='none';const values={api,nonce, ...fields};Object.entries(values).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=String(v??'');form.appendChild(i)});let done=false;function end(err,data){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();setTimeout(()=>frame.remove(),100);err?reject(err):resolve(data)}function onMessage(e){if(e.source!==frame.contentWindow)return;if(!PINNED_ORIGINS.has(e.origin)&&!/^https:\/\/[a-z0-9.-]+\.googleusercontent\.com$/.test(e.origin))return;const d=e.data;if(!d||d.app!=='ERH_ACCESS_ISOLATED_TEST_V1'||d.nonce!==nonce)return;d.ok?end(null,d):end(Error(d.error||'API trả về lỗi'))}window.addEventListener('message',onMessage);document.body.append(frame,form);const timer=setTimeout(()=>end(Error('Hết 20 giây, không nhận được xác nhận API. Kiểm tra Executions của Apps Script TEST.')),20000);form.submit()})}
 async function run(name,fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(x=>x.disabled=true);log('Đang thực hiện '+name+' ...');try{await fn()}catch(e){log('FAIL · '+e.message)}finally{busy=false;document.querySelectorAll('button').forEach(x=>x.disabled=false)}}
 $('ping').onclick=()=>run('PING',async()=>{const d=await request('ping');log('PASS PING · Backend TEST trả lời · '+(d.message||''))});
 $('login').onclick=()=>run('LOGIN',async()=>{const d=await request('login',{staff:$('staff').value.trim(),password:$('password').value});$('password').value='';if(!d.sessionToken)throw Error('Backend thiếu session token');sessionToken=d.sessionToken;staffName=d.staff||'TEST01';$('loginSection').classList.add('hidden');$('sessionSection').classList.remove('hidden');$('welcome').textContent='Phiên TEST: '+staffName;log('PASS LOGIN · '+staffName+' · Phiên TEST đã cấp')});
 $('check').onclick=()=>run('SESSIONCHECK',async()=>{if(!sessionToken)throw Error('Chưa đăng nhập');const d=await request('sessioncheck',{sessionToken});log('PASS SESSIONCHECK · '+(d.staff||staffName))});
 $('logout').onclick=()=>run('LOGOUT',async()=>{if(sessionToken)await request('logout',{sessionToken});sessionToken='';staffName='';$('sessionSection').classList.add('hidden');$('loginSection').classList.remove('hidden');log('Đã đăng xuất TEST')});
+
+const P2E_ACTIONS=['gv.list','bc33.read','bc33.batchRead','bcn.bootstrap','bcn.read','mepm.read'];
+for(const action of P2E_ACTIONS){
+  const b=document.createElement('button');b.type='button';b.textContent='Đọc '+action;
+  b.onclick=()=>run(action,async()=>{
+    if(!sessionToken)throw Error('Chưa đăng nhập TEST');
+    const d=await request(action,{sessionToken});
+    if(d.mode!=='SYNTHETIC_READ_ONLY')throw Error('Không đúng chế độ dữ liệu giả');
+    $('p2eResult').textContent=JSON.stringify(d,null,2);
+    log('PASS '+action+' · SYNTHETIC_READ_ONLY');
+  });
+  $('p2eActions').append(b);
+}
 </script></body></html>
