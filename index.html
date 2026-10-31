@@ -1,7 +1,7 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#195b93"><title>ERH Access P2F.8 – TEST</title>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#195b93"><title>ERH Access P2F.9 – REVOCATION TEST</title>
 <style>:root{font:16px system-ui,Arial;color:#17324f;background:#edf3f9}*{box-sizing:border-box}body{margin:0}.wrap{max-width:690px;margin:28px auto;padding:15px}header{background:#174f82;color:white;padding:18px;border-radius:13px 13px 0 0}h1{font-size:22px;margin:0}main{padding:20px;background:white;border-radius:0 0 13px 13px;box-shadow:0 5px 30px #1233}label{display:block;margin-top:14px;font-weight:650}input{width:100%;padding:12px;border:1px solid #bdcde1;border-radius:8px;font:inherit}button{padding:12px 16px;border:0;background:#185d9e;color:white;border-radius:8px;margin:12px 8px 0 0;font-weight:700;cursor:pointer}button:disabled{opacity:.6}.secondary{background:#60768a}.note{background:#fff1d5;padding:12px;border-radius:8px;font-size:14px}.status{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #dce6f0;background:#f5f9ff;border-radius:8px;padding:12px;min-height:58px}.hidden{display:none}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs span{padding:10px;border-radius:8px;background:#e6f1ff;color:#165590;font-weight:700}.modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.modes button{margin:0}.active{outline:3px solid #82baf4}small{color:#627487}</style></head>
-<body><div class="wrap"><header><h1>ERH KỸ THUẬT KHỐI</h1><small style="color:#d5e9ff">ACCESS TEST – P2F.8 · Chưa mở dữ liệu nghiệp vụ</small></header><main>
+<body><div class="wrap"><header><h1>ERH KỸ THUẬT KHỐI</h1><small style="color:#d5e9ff">ACCESS TEST – P2F.9 · Xác minh thu hồi token · Chưa mở dữ liệu nghiệp vụ</small></header><main>
 <p class="note">MÔI TRƯỜNG TEST RIÊNG. Không dùng URL của App Tổng V10. Chỉ tiếp tục đăng nhập nhân viên khi người quản trị xác nhận API TEST đã được cấu hình truy cập an toàn.</p>
 <label for="api">URL Apps Script Access TEST V5 (/exec)</label><input id="api" type="url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"><button id="ping">Kiểm tra kết nối (PING)</button>
 <div class="modes"><button id="modeSynthetic" type="button" class="active">TEST01 – dữ liệu giả</button><button id="modeReal" type="button" class="secondary">Nhân viên ERH – SSO TEST</button></div>
@@ -23,6 +23,23 @@ $('modeSynthetic').onclick=()=>switchMode('synthetic');$('modeReal').onclick=()=
 $('ping').onclick=()=>run('PING',async()=>{const d=await request('ping');log('PASS PING · '+(d.message||'Backend TEST trả lời'))});
 $('login').onclick=()=>run('LOGIN',async()=>{const selected=mode;const staff=$('staff').value.trim(),password=$('password').value;try{const d=await request(selected==='real'?'real.login':'login',{staff,password});if(!d.sessionToken)throw Error('Backend thiếu session token');if(selected==='real'&&d.authMode!=='REAL_SSO_TEST')throw Error('Phản hồi không đúng chế độ SSO');sessionToken=d.sessionToken;staffName=d.staff||staff; $('loginSection').classList.add('hidden');$('sessionSection').classList.remove('hidden');$('syntheticOnly').classList.toggle('hidden',selected==='real');$('p2e').classList.toggle('hidden',selected==='real');$('welcome').textContent=(selected==='real'?'SSO TEST: ':'TEST: ')+staffName;log('PASS LOGIN '+(selected==='real'?'SSO TEST':'SYNTHETIC')+' · '+staffName)}finally{$('password').value=''}});
 $('check').onclick=()=>run('SESSIONCHECK',async()=>{if(!sessionToken)throw Error('Chưa đăng nhập');const d=await request(mode==='real'?'real.sessioncheck':'sessioncheck',{sessionToken});log('PASS SESSIONCHECK · '+(d.staff||staffName))});
-$('logout').onclick=()=>run('LOGOUT',async()=>{if(!sessionToken)throw Error('Chưa đăng nhập');await request(mode==='real'?'real.logout':'logout',{sessionToken});sessionToken='';staffName='';$('sessionSection').classList.add('hidden');$('loginSection').classList.remove('hidden');log('PASS LOGOUT · phiên TEST đã đăng xuất')});
+$('logout').onclick=()=>run('LOGOUT',async()=>{
+  if(!sessionToken)throw Error('Chưa đăng nhập');
+  const wasReal=mode==='real';
+  const oldToken=sessionToken;
+  await request(wasReal?'real.logout':'logout',{sessionToken:oldToken});
+  sessionToken='';staffName='';
+  $('sessionSection').classList.add('hidden');$('loginSection').classList.remove('hidden');
+  if(!wasReal){log('PASS LOGOUT · phiên TEST01 đã đăng xuất');return;}
+  log('PASS LOGOUT SSO · đang xác minh token cũ đã bị thu hồi…');
+  try{
+    await request('real.sessioncheck',{sessionToken:oldToken});
+    log('FAIL REVOCATION · token cũ vẫn được chấp nhận sau LOGOUT');
+  }catch(err){
+    const code=String(err&&err.message||'');
+    if(code==='SESSION_INVALID')log('PASS LOGOUT SSO + REVOCATION · token cũ đã bị từ chối');
+    else log('LOGOUT SSO PASS · REVOCATION CHƯA XÁC MINH · '+code.slice(0,110));
+  }
+});
 const P2E_ACTIONS=['gv.list','bc33.read','bc33.batchRead','bcn.bootstrap','bcn.read','mepm.read'];for(const action of P2E_ACTIONS){const b=document.createElement('button');b.type='button';b.textContent='Đọc '+action;b.onclick=()=>run(action,async()=>{if(mode!=='synthetic'||!sessionToken)throw Error('Chỉ hỗ trợ phiên dữ liệu giả');const d=await request(action,{sessionToken});if(d.mode!=='SYNTHETIC_READ_ONLY')throw Error('Không đúng chế độ dữ liệu giả');$('p2eResult').textContent=JSON.stringify(d,null,2);log('PASS '+action+' · SYNTHETIC_READ_ONLY')});$('p2eActions').append(b)}
 </script></body></html>
