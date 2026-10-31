@@ -1,9 +1,10 @@
 /* External Pages transport; original module iframe bridges remain unchanged. */
 (function(){'use strict';
+  document.addEventListener('DOMContentLoaded',()=>{for(const el of document.body.children){if(el.tagName==='DIV'&&el.textContent==='App Tổng Pages TEST P2F.10.20 — kết nối đăng nhập; API nghiệp vụ chưa mở')el.textContent='App Tổng Pages TEST P2F.10.22 — TEST: tạo Giao việc theo quyền và khóa ghi máy chủ';}});
   const APP='ERH_APP_TOTAL_PAGES_P2F1020';
   // Set only after creating a NEW TEST deployment in the confirmed App Total project.
   const ENDPOINT='https://script.google.com/macros/s/AKfycbyOfAesc3_-60IPPFmT78FFEWWSWMa8SHGbbWiCS36ZnftKqv_FdkHVIVHlljjTtdq5rw/exec';
-  const errors={BUSINESS_API_NOT_ACCEPTED:'Chức năng này chưa được nghiệm thu kết nối API trên bản Pages TEST.',TEST_SCRIPT_ONLY:'Đường dẫn API không thuộc App Tổng TEST đã xác nhận.',SESSION_INVALID:'Phiên đăng nhập không còn hiệu lực.'};
+  const errors={WRITE_REQUEST_ID_REQUIRED:'Thiếu mã gửi ổn định; không gửi lại bằng mã mới.',WRITE_CATALOG_NOT_ACCEPTED:'Bước này chỉ tạo phiếu với danh mục hiện có.',WRITE_ROLE_DENIED:'Tài khoản chưa có vai trò được giao việc.',WRITE_PROJECT_DENIED:'Dự án không thuộc phạm vi được phép.',WRITE_PLAN_DENIED:'Kế hoạch không thuộc phạm vi được phép.',WRITE_CREATE_DENIED:'Chưa có quyền CREATE Giao việc được duyệt cho dự án này.',WRITE_RECIPIENT_DENIED:'Người nhận hoặc hỗ trợ chưa có phân quyền dự án hợp lệ.',T4_MASTER_WRITE_LOCKED:'Khóa ghi TEST trên máy chủ vẫn đóng; chưa lưu dữ liệu.',READ_ONLY_METHOD_DENIED:'Bản Pages TEST chỉ cho phép các lệnh đọc đã nối; thao tác này vẫn khóa.',AUTH_STAFF_DISABLED:'Nhân sự chưa có trạng thái ĐANG LÀM VIỆC hợp lệ trong Data Hub TEST.',BUSINESS_API_NOT_ACCEPTED:'Chức năng này chưa được nghiệm thu kết nối API trên bản Pages TEST.',TEST_SCRIPT_ONLY:'Đường dẫn API không thuộc App Tổng TEST đã xác nhận.',SESSION_INVALID:'Phiên đăng nhập không còn hiệu lực.'};
   function request(method,args){return new Promise((resolve,reject)=>{
     if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(ENDPOINT)){reject(Error('Chưa cấu hình URL triển khai App Tổng TEST mới trong transport.js.'));return;}
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>b.toString(16).padStart(2,'0')).join('');
