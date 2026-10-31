@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#195b93"><title>ERH Access P2F.10.15 – SSO GUARD PROBE</title>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#195b93"><title>ERH Access P2F.10.16 – GUARDED LIST/DETAIL</title>
 <style>:root{font:16px system-ui,Arial;color:#17324f;background:#edf3f9}*{box-sizing:border-box}body{margin:0}.wrap{max-width:690px;margin:28px auto;padding:15px}header{background:#174f82;color:white;padding:18px;border-radius:13px 13px 0 0}h1{font-size:22px;margin:0}main{padding:20px;background:white;border-radius:0 0 13px 13px;box-shadow:0 5px 30px #1233}label{display:block;margin-top:14px;font-weight:650}input{width:100%;padding:12px;border:1px solid #bdcde1;border-radius:8px;font:inherit}button{padding:12px 16px;border:0;background:#185d9e;color:white;border-radius:8px;margin:12px 8px 0 0;font-weight:700;cursor:pointer}button:disabled{opacity:.6}.secondary{background:#60768a}.note{background:#fff1d5;padding:12px;border-radius:8px;font-size:14px}.status{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #dce6f0;background:#f5f9ff;border-radius:8px;padding:12px;min-height:58px}.hidden{display:none}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs span{padding:10px;border-radius:8px;background:#e6f1ff;color:#165590;font-weight:700}.modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.modes button{margin:0}.active{outline:3px solid #82baf4}small{color:#627487}</style></head>
 <body><div class="wrap"><header><h1>ERH KỸ THUẬT KHỐI</h1><small style="color:#d5e9ff">ACCESS TEST – P2F.10.15 · Kiểm tra quyền máy chủ · Chưa mở dữ liệu nghiệp vụ</small></header><main>
 <p class="note">MÔI TRƯỜNG TEST RIÊNG. Không dùng URL của App Tổng V10. Chỉ tiếp tục đăng nhập nhân viên khi người quản trị xác nhận API TEST đã được cấu hình truy cập an toàn.</p>
 <label for="api">URL Apps Script Access TEST mới (/exec)</label><input id="api" type="url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"><button id="ping">Kiểm tra kết nối (PING)</button>
 <div class="modes"><button id="modeSynthetic" type="button" class="active">TEST01 – dữ liệu giả</button><button id="modeReal" type="button" class="secondary">Nhân viên ERH – SSO TEST</button></div>
 <section id="loginSection"><label for="staff">Mã nhân viên TEST</label><input id="staff" value="TEST01" autocomplete="off" maxlength="40"><label for="password">Mật khẩu TEST</label><input id="password" type="password" autocomplete="off"><button id="login">Đăng nhập TEST</button></section>
-<section id="sessionSection" class="hidden"><p id="welcome"></p><div id="syntheticOnly" class="tabs"><span>Giao việc (mô phỏng)</span><span>Báo cáo công việc (mô phỏng)</span><span>Báo cáo ngày (mô phỏng)</span></div><section id="guardSection" class="hidden"><h3>Kiểm tra phân quyền máy chủ P2F.10.15</h3><p class="note">Chỉ trả số lượng phiếu có thể xem theo phiên đăng nhập. Không trả nội dung phiếu, không mở API nghiệp vụ.</p><button id="guardProbe" type="button">Kiểm tra quyền API (SSO)</button><pre id="guardResult" class="status">Chưa kiểm tra quyền API.</pre></section><button id="check">Kiểm tra phiên</button><button id="logout" class="secondary">Đăng xuất</button><section id="p2e"><h3>API đọc mô phỏng</h3><p class="note">DỮ LIỆU GIẢ. Không có thao tác ghi nghiệp vụ.</p><div id="p2eActions"></div><pre id="p2eResult" class="status">Chưa gọi API đọc.</pre></section></section>
+<section id="sessionSection" class="hidden"><p id="welcome"></p><div id="syntheticOnly" class="tabs"><span>Giao việc (mô phỏng)</span><span>Báo cáo công việc (mô phỏng)</span><span>Báo cáo ngày (mô phỏng)</span></div><section id="guardSection" class="hidden"><h3>Kiểm tra phân quyền máy chủ P2F.10.15</h3><p class="note">Chỉ trả số lượng phiếu có thể xem theo phiên đăng nhập. Không trả nội dung phiếu, không mở API nghiệp vụ.</p><button id="guardProbe" type="button">Kiểm tra quyền API (SSO)</button><div class="tabs"><button id="guardList" type="button">Danh sách phiếu được phép</button><select id="guardModule" aria-label="Chọn module"><option value="GV">Giao việc</option><option value="BC33">BC33</option><option value="BM01">BM01</option></select></div><label for="guardRecord">Mã phiếu cần kiểm tra quyền mở chi tiết</label><input id="guardRecord" autocomplete="off" placeholder="Dán mã phiếu; hoặc lấy mã từ danh sách"/><button id="guardDetail" type="button">Kiểm tra quyền mở phiếu</button><p class="note">Để thử từ chối vượt quyền: nhập mã phiếu của người khác; chỉ xác nhận PASS khi API trả ACCESS_DENIED. Không trả nội dung phiếu.</p><pre id="guardResult" class="status">Chưa kiểm tra quyền API.</pre></section><button id="check">Kiểm tra phiên</button><button id="logout" class="secondary">Đăng xuất</button><section id="p2e"><h3>API đọc mô phỏng</h3><p class="note">DỮ LIỆU GIẢ. Không có thao tác ghi nghiệp vụ.</p><div id="p2eActions"></div><pre id="p2eResult" class="status">Chưa gọi API đọc.</pre></section></section>
 <h3>Nhật ký kiểm tra</h3><div id="status" class="status" role="status" aria-live="polite">Chưa kiểm thử.</div><small>Không hiển thị token hay mật khẩu trong nhật ký. Không lưu token hoặc mật khẩu trên trình duyệt.</small>
 </main></div><script>
 'use strict';
@@ -23,7 +23,7 @@ async function run(name,fn){if(busy)return;busy=true;document.querySelectorAll('
 function switchMode(next){if(sessionToken){log('Đăng xuất trước khi đổi chế độ.');return}mode=next;$('staff').value=mode==='real'?'':'TEST01';$('password').value='';$('staff').previousElementSibling.textContent=mode==='real'?'Mã nhân viên ERH':'Mã nhân viên TEST';$('login').textContent=mode==='real'?'Đăng nhập nhân viên – SSO TEST':'Đăng nhập TEST';$('modeReal').className=mode==='real'?'active':'secondary';$('modeSynthetic').className=mode==='synthetic'?'active':'secondary';log(mode==='real'?'Đã chọn SSO TEST – chưa xác nhận hoạt động.':'Đã chọn dữ liệu giả TEST01.');}
 $('modeSynthetic').onclick=()=>switchMode('synthetic');$('modeReal').onclick=()=>switchMode('real');
 $('ping').onclick=()=>run('PING',async()=>{const d=await request('ping');log('PASS PING · '+(d.message||'Backend TEST trả lời'))});
-$('login').onclick=()=>run('LOGIN',async()=>{const selected=mode;const staff=$('staff').value.trim(),password=$('password').value;try{const d=await request(selected==='real'?'real.login':'login',{staff,password});if(!d.sessionToken)throw Error('Backend thiếu session token');if(selected==='real'&&d.authMode!=='REAL_SSO_TEST')throw Error('Phản hồi không đúng chế độ SSO');sessionToken=d.sessionToken;staffName=d.staff||staff; $('loginSection').classList.add('hidden');$('sessionSection').classList.remove('hidden');$('syntheticOnly').classList.toggle('hidden',selected==='real');$('p2e').classList.toggle('hidden',selected==='real');$('guardSection').classList.toggle('hidden',selected!=='real');$('guardResult').textContent='Chưa kiểm tra quyền API.';$('welcome').textContent=(selected==='real'?'SSO TEST: ':'TEST: ')+staffName;log('PASS LOGIN '+(selected==='real'?'SSO TEST':'SYNTHETIC')+' · '+staffName)}finally{$('password').value=''}});
+$('login').onclick=()=>run('LOGIN',async()=>{const selected=mode;const staff=$('staff').value.trim(),password=$('password').value;try{const d=await request(selected==='real'?'real.login':'login',{staff,password});if(!d.sessionToken)throw Error('Backend thiếu session token');if(selected==='real'&&d.authMode!=='REAL_SSO_TEST')throw Error('Phản hồi không đúng chế độ SSO');sessionToken=d.sessionToken;staffName=d.staff||staff; $('loginSection').classList.add('hidden');$('sessionSection').classList.remove('hidden');$('syntheticOnly').classList.toggle('hidden',selected==='real');$('p2e').classList.toggle('hidden',selected==='real');$('guardSection').classList.toggle('hidden',selected!=='real');$('guardResult').textContent='Chưa kiểm tra quyền API.';$('guardRecord').value='';$('welcome').textContent=(selected==='real'?'SSO TEST: ':'TEST: ')+staffName;log('PASS LOGIN '+(selected==='real'?'SSO TEST':'SYNTHETIC')+' · '+staffName)}finally{$('password').value=''}});
 $('guardProbe').onclick=()=>run('REAL GUARD PROBE',async()=>{
   if(mode!=='real'||!sessionToken)throw Error('Cần phiên SSO nhân viên hợp lệ');
   const d=await request('real.guard.probe',{sessionToken});
@@ -31,6 +31,34 @@ $('guardProbe').onclick=()=>run('REAL GUARD PROBE',async()=>{
   $('guardResult').textContent='Nhân viên: '+d.staff+'\nGV được xem: '+d.counts.gv+'\nBC33 được xem: '+d.counts.bc33+'\nBM01 được xem: '+d.counts.bm01+'\nTrạng thái: '+d.status+'\nAPI nghiệp vụ: ĐANG KHÓA';
   log('PASS REAL GUARD PROBE · '+d.staff+' · GV '+d.counts.gv+' / BC33 '+d.counts.bc33+' / BM01 '+d.counts.bm01);
 });
+
+$('guardList').onclick=()=>run('REAL GUARD LIST',async()=>{
+ if(mode!=='real'||!sessionToken)throw Error('Cần đăng nhập SSO');
+ const module=$('guardModule').value;
+ const d=await request('real.guard.list',{sessionToken,module});
+ if(d.check!=='P2F1016_GUARDED_ROUTES'||d.staff!==staffName||d.module!==module||d.status!=='GUARDED_LIST_PASS'||!Array.isArray(d.ids)||d.businessApiEnabled!==false||d.readOnly!==true||d.fullLiveApiProtected!==false)throw Error('Phản hồi LIST không đúng hợp đồng TEST');
+ if(d.ids.length!==new Set(d.ids).size)throw Error('Danh sách ID trùng');
+ $('guardResult').textContent='Module: '+module+'\nSố phiếu được phép: '+d.ids.length+'\nMã phiếu:\n'+(d.ids.join('\n')||'(không có)')+'\nKhông trả nội dung nghiệp vụ';
+ if(d.ids.length)$('guardRecord').value=d.ids[0];
+ log('PASS GUARDED LIST · '+staffName+' · '+module+' '+d.ids.length);
+});
+$('guardDetail').onclick=()=>run('REAL GUARD DETAIL',async()=>{
+ if(mode!=='real'||!sessionToken)throw Error('Cần đăng nhập SSO');
+ const module=$('guardModule').value,recordId=$('guardRecord').value.trim();
+ if(!recordId||recordId.length>120)throw Error('Nhập mã phiếu hợp lệ');
+ try{
+  const d=await request('real.guard.detail',{sessionToken,module,recordId});
+  if(d.check!=='P2F1016_GUARDED_ROUTES'||d.staff!==staffName||d.module!==module||d.recordId!==recordId||d.allowed!==true||d.status!=='GUARDED_DETAIL_PASS'||d.businessApiEnabled!==false||d.readOnly!==true||d.fullLiveApiProtected!==false)throw Error('Phản hồi DETAIL không hợp lệ');
+  $('guardResult').textContent='PASS: Có quyền mở mã phiếu '+recordId+' ('+module+').\nKhông trả nội dung phiếu.';
+  log('PASS GUARDED DETAIL ALLOW · '+staffName+' · '+module+' · '+recordId);
+ }catch(e){
+  if(String(e.message||'')==='ACCESS_DENIED'){
+   $('guardResult').textContent='Máy chủ từ chối mã phiếu '+recordId+' ('+module+').';
+   log('PASS GUARDED DETAIL DENY · '+staffName+' · '+module+' · '+recordId);
+  }else throw e;
+ }
+});
+
 $('check').onclick=()=>run('SESSIONCHECK',async()=>{if(!sessionToken)throw Error('Chưa đăng nhập');const d=await request(mode==='real'?'real.sessioncheck':'sessioncheck',{sessionToken});log('PASS SESSIONCHECK · '+(d.staff||staffName))});
 $('logout').onclick=()=>run('LOGOUT',async()=>{
   if(!sessionToken)throw Error('Chưa đăng nhập');
