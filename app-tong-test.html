@@ -1763,5 +1763,171 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
 })();
 </script>
 <!-- === TAB4 GV READONLY UI MOUNT END === -->
+  <!-- ================= ERH MOBILE MENU P2F1034 GITHUB PAGES TEST START =================
+CHỈ DÁN KHỐI NÀY 1 LẦN VÀO CUỐI app-tong-test.html (GITHUB PAGES, NHÁNH test/account-independent-ui-20261029), NGAY TRƯỚC THẺ </body> CUỐI CÙNG.
+KHÔNG THAY TOÀN BỘ FILE MEPM_Web BẰNG PHIÊN BẢN CŨ.
+Không thay đổi xác thực, phân quyền, API, tải hoặc lưu dữ liệu.
+================= -->
+<style id="erh-mobile-menu-p2f1034-style">
+  #erh-mobile-menu-btn,
+  #erh-mobile-menu-close,
+  #erh-mobile-menu-backdrop { display:none; }
+
+  @media screen and (max-width:780px) {
+    /* Sửa quy tắc cũ '.side{display:none}' mà không sửa menu/nav gốc */
+    .app > aside.side {
+      display:block !important;
+      box-sizing:border-box !important;
+      position:fixed !important;
+      left:0 !important;
+      top:0 !important;
+      height:100vh !important;
+      height:100dvh !important;
+      width:min(84vw,310px) !important;
+      max-width:310px !important;
+      min-width:0 !important;
+      flex:none !important;
+      z-index:10002 !important;
+      overflow-y:auto !important;
+      overflow-x:hidden !important;
+      padding-top:6px !important;
+      -webkit-overflow-scrolling:touch;
+      transform:translateX(-105%);
+      visibility:hidden;
+      pointer-events:none;
+      transition:transform .2s ease,visibility .2s ease;
+    }
+    .app > aside.side.erh-mobile-menu-open {
+      transform:translateX(0) !important;
+      visibility:visible !important;
+      pointer-events:auto !important;
+    }
+    .app > aside.side .brand { padding-right:40px; }
+    .app > .main { width:100% !important; min-width:0 !important; }
+    .app > .main > .top { gap:6px !important; }
+    .app > .main > .top .title {
+      min-width:0 !important;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      font-size:15px !important;
+    }
+    #erh-mobile-menu-btn {
+      display:inline-flex !important;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 42px;
+      width:42px;
+      height:42px;
+      border:1px solid #b8d8ee;
+      border-radius:10px;
+      color:#086fae;
+      background:#f1f9ff;
+      font-size:24px;
+      font-weight:700;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #erh-mobile-menu-close {
+      display:flex !important;
+      position:absolute;
+      top:9px;
+      right:8px;
+      align-items:center;
+      justify-content:center;
+      width:36px;
+      height:36px;
+      border:1px solid rgba(255,255,255,.55);
+      border-radius:9px;
+      background:rgba(255,255,255,.14);
+      color:white;
+      font-size:25px;
+      z-index:3;
+      cursor:pointer;
+    }
+    #erh-mobile-menu-backdrop.erh-mobile-menu-backdrop-open {
+      display:block !important;
+      position:fixed;
+      inset:0;
+      z-index:10001;
+      background:rgba(9,27,49,.52);
+    }
+    body.erh-mobile-menu-scroll-lock { overflow:hidden !important; }
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    .app > aside.side { transition:none !important; }
+  }
+</style>
+<script id="erh-mobile-menu-p2f1034-script">
+(function(){
+  'use strict';
+  function initErhMobileMenuP2F1033(){
+    // Idempotent: khi mã được chèn 2 lần không tạo trùng nút, listener.
+    if(document.getElementById('erh-mobile-menu-btn')) return;
+    var app=document.querySelector('.app');
+    var side=app&&app.querySelector('aside.side');
+    var top=app&&app.querySelector('main.main > header.top');
+    if(!app||!side||!top) return;
+
+    var opener=document.createElement('button');
+    opener.type='button';
+    opener.id='erh-mobile-menu-btn';
+    opener.textContent='☰';
+    opener.setAttribute('aria-label','Mở menu ứng dụng');
+    opener.setAttribute('aria-expanded','false');
+    opener.setAttribute('aria-controls','erh-main-nav-p2f1033');
+    if(!side.id) side.id='erh-main-nav-p2f1033';
+    else opener.setAttribute('aria-controls',side.id);
+    top.insertBefore(opener,top.firstChild);
+
+    var closer=document.createElement('button');
+    closer.type='button';
+    closer.id='erh-mobile-menu-close';
+    closer.textContent='×';
+    closer.setAttribute('aria-label','Đóng menu ứng dụng');
+    side.insertBefore(closer,side.firstChild);
+
+    var backdrop=document.createElement('div');
+    backdrop.id='erh-mobile-menu-backdrop';
+    backdrop.setAttribute('aria-hidden','true');
+    app.appendChild(backdrop);
+
+    function menuOpen(open){
+      if(open && window.innerWidth>780) return;
+      side.classList.toggle('erh-mobile-menu-open',open);
+      backdrop.classList.toggle('erh-mobile-menu-backdrop-open',open);
+      document.body.classList.toggle('erh-mobile-menu-scroll-lock',open);
+      opener.setAttribute('aria-expanded',String(open));
+      opener.setAttribute('aria-label',open?'Đóng menu ứng dụng':'Mở menu ứng dụng');
+    }
+    opener.addEventListener('click',function(){
+      menuOpen(!side.classList.contains('erh-mobile-menu-open'));
+    });
+    closer.addEventListener('click',function(){menuOpen(false);});
+    backdrop.addEventListener('click',function(){menuOpen(false);});
+    // Chọn một trang trong menu thì đóng. Chọn nhóm Kế hoạch/Báo cáo/Danh mục thì vẫn mở.
+    side.addEventListener('click',function(event){
+      var target=event.target;
+      if(target && typeof target.closest==='function' && target.closest('[data-page]')){
+        menuOpen(false);
+      }
+    });
+    document.addEventListener('keydown',function(event){
+      if(event.key==='Escape') menuOpen(false);
+    });
+    window.addEventListener('resize',function(){
+      if(window.innerWidth>780 && side.classList.contains('erh-mobile-menu-open')) menuOpen(false);
+    },{passive:true});
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initErhMobileMenuP2F1033,{once:true});
+  }else{
+    initErhMobileMenuP2F1033();
+  }
+})();
+</script>
+<!-- ================= ERH MOBILE MENU P2F1033 TEST END ================= -->
+
 </body>
 </html>
