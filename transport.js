@@ -19,7 +19,15 @@
     }
     Object.entries({nonce,method,args:JSON.stringify(args)}).forEach(([name,value])=>{const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);});
     window.addEventListener('message',receive);document.body.append(frame,form);
-    timer=setTimeout(()=>finish(Error('Chưa nhận phản hồi sau 40 giây. Yêu cầu không được tự động gửi lại.')),40000);
+    // P2F1026: keep read/login timeout; wait longer only for GV create, never retry writes.
+    const isGvCreate=method==='ERH_TAB1_GV_DHT22_readSafe' &&
+      Array.isArray(args) && ['APP_GIAOVIEC_V5_create','ERH_CTD_create'].includes(args[0]);
+    const deadlineMs=isGvCreate?90000:40000;
+    timer=setTimeout(()=>finish(Error(
+      'Chưa nhận phản hồi sau '+(deadlineMs/1000)+' giây. '+
+      (isGvCreate?'Trạng thái ghi chưa xác định; kiểm tra TASK_ID/requestId trước khi gửi lại.':
+      'Yêu cầu không được tự động gửi lại.')
+    )),deadlineMs);
     try{form.submit();form.remove();}catch(e){finish(Error('Không gửi được yêu cầu máy chủ.'));}
   });}
   function runner(success,failure,context){return new Proxy({}, {get(_,name){
