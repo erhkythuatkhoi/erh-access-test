@@ -1929,5 +1929,92 @@ Không thay đổi xác thực, phân quyền, API, tải hoặc lưu dữ liệ
 </script>
 <!-- ================= ERH MOBILE MENU P2F1033 TEST END ================= -->
 
+<!-- P2F1053-DIAG-START | READ-ONLY TEST | DO NOT LOG TOKENS OR IMAGES -->
+<style id="erh-p2f1053-diag-style">
+#erhDg53Open{position:fixed;right:10px;bottom:12px;z-index:2147483645;padding:9px 12px;background:#123e72;color:white;border:2px solid white;border-radius:9px;font:700 12px Arial;cursor:pointer;box-shadow:0 1px 8px #0004}
+#erhDg53Panel{position:fixed;right:12px;bottom:55px;z-index:2147483645;width:min(480px,calc(100vw - 24px));max-height:75vh;overflow:auto;background:#fff;color:#203346;border:2px solid #2774b1;border-radius:10px;box-shadow:0 4px 22px #0004;padding:13px;font:13px/1.4 Arial}
+#erhDg53Panel[hidden]{display:none!important}
+#erhDg53Panel h3{margin:0 0 7px;color:#183b61;font-size:15px}
+#erhDg53Panel p{margin:4px 0 9px}
+#erhDg53Panel button{border:1px solid #aaa;border-radius:6px;padding:7px 10px;margin:3px 4px 4px 0;background:#f2f6fa;color:#153e65;font-weight:700;cursor:pointer}
+#erhDg53Panel button:disabled{opacity:.5}
+#erhDg53Panel pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf4f9;padding:8px;border-radius:6px;max-height:41vh;overflow:auto;font:12px/1.35 Consolas,monospace}
+</style>
+<script id="erh-p2f1053-diagnostics">
+(function(){'use strict';
+ const VERSION='P2F1053';
+ const state={version:VERSION,checks:[]};
+ const open=document.createElement('button');open.id='erhDg53Open';open.type='button';open.textContent='🛠 Kiểm tra Git TEST';
+ const panel=document.createElement('section');panel.id='erhDg53Panel';panel.hidden=true;panel.setAttribute('aria-label','Chẩn đoán Git TEST chỉ đọc');
+ panel.innerHTML='<h3>CHẨN ĐOÁN GIT TEST – P2F1053</h3><p>Chỉ đọc. Không lưu chữ ký, không ghi CSDL, không hiển thị token hoặc dữ liệu ảnh.</p><button type="button" id="erhDg53Run">CHẠY KIỂM TRA</button><button type="button" id="erhDg53Copy">SAO CHÉP KẾT QUẢ</button><button type="button" id="erhDg53Close">ĐÓNG</button><pre id="erhDg53Output">Đăng nhập App Tổng để kiểm tra API chữ ký. Có thể chạy trước đăng nhập để kiểm tra Git.</pre>';
+ document.body.append(open,panel);
+ const $=id=>document.getElementById(id),out=$('erhDg53Output'),run=$('erhDg53Run');
+ open.addEventListener('click',()=>{panel.hidden=!panel.hidden;});
+ $('erhDg53Close').addEventListener('click',()=>{panel.hidden=true;});
+ const safe=str=>String(str||'').replace(/[^A-Za-z0-9_\-: ]/g,'').slice(0,95);
+ const record=(step,status,detail)=>{state.checks.push({step,status,detail:safe(detail)});out.textContent=JSON.stringify(state,null,2);};
+ async function readAsset(name){
+  const r=await fetch(name+'?p2f1053='+Date.now(),{cache:'no-store',credentials:'same-origin'});
+  if(!r.ok)throw Error('HTTP_'+r.status);
+  return await r.text();
+ }
+ function apiCall(method,args,ms){return new Promise((resolve,reject)=>{
+  let done=false;const timeout=setTimeout(()=>{if(done)return;done=true;reject(Error('TIMEOUT'));},ms||35000);
+  const finish=(err,value)=>{if(done)return;done=true;clearTimeout(timeout);err?reject(Error(String(err.message||err))):resolve(value);};
+  try{
+   if(!window.google||!google.script||!google.script.run)throw Error('TRANSPORT_MISSING');
+   const channel=google.script.run.withSuccessHandler(v=>finish(null,v)).withFailureHandler(e=>finish(e));
+   channel[method].apply(channel,args);
+  }catch(e){finish(e);}
+ });}
+ function codeOf(e){const t=String(e?.message||e||'');
+  const known=['INVALID_NONCE','REQUEST_TOO_LARGE','READ_ONLY_METHOD_DENIED','BUSINESS_API_NOT_ACCEPTED','SESSION_INVALID','TEST_SCRIPT_ONLY','AUTH_STAFF_DISABLED','TRANSPORT_MISSING','TIMEOUT','SERVER_ERROR','WRITE_METHOD_DENIED'];
+  for(const k of known)if(t.includes(k))return k;
+  if(/45 giây|40 giây|thời gian|time/i.test(t))return 'TIMEOUT_OR_NETWORK';
+  if(/phiên|session|đăng nhập/i.test(t))return 'SESSION_OR_LOGIN';
+  return 'API_FAILURE';
+ }
+ async function check(){
+  state.checks=[];state.version=VERSION;state.page='app-tong-test.html';state.runAt=new Date().toISOString();
+  run.disabled=true;out.textContent='Đang kiểm tra Git TEST (không ghi dữ liệu)…';
+  try{
+   record('01_DOCUMENT',document.doctype&&document.body&&document.title?'PASS':'FAIL',document.title?'HTML_DOCUMENT':'INVALID_HTML');
+   try{const html=await readAsset('app-tong-test.html');
+    const good=/<!doctype html>/i.test(html)&&html.includes('ERH_BCN_UI')&&html.includes('BCN_reloadSignaturePreview')&&html.length>200000;
+    record('02_GIT_HTML',good?'PASS':'FAIL',good?'HTML_SIZE_OK_PATCH_'+(html.includes('P2F1053-DIAG-START')?'1053':'OLDER'):'WRONG_FILE_OR_INCOMPLETE_HTML');
+   }catch(e){record('02_GIT_HTML','FAIL',codeOf(e)==='API_FAILURE'?'FETCH_FAILED':codeOf(e));}
+   try{const source=await readAsset('transport.js');
+    const m=source.match(/\bconst\s+ENDPOINT\s*=\s*['"](https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_\-]+\/exec)['"]/);
+    record('03_TRANSPORT_FILE',source.includes('ERH_APP_TOTAL_PAGES_P2F1020')&&m?'PASS':'FAIL',m?'ENDPOINT_FORMAT_VALID':'ENDPOINT_MISSING');
+   }catch(e){record('03_TRANSPORT_FILE','FAIL','TRANSPORT_UNAVAILABLE');}
+   const token=typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';
+   record('04_LOGIN_SESSION',token.length>=16?'PASS':'NEED_LOGIN',token.length>=16?'SESSION_PRESENT':'LOGIN_THEN_RUN_AGAIN');
+   try{const ping=await apiCall('ERH_P2F1020_ping',[],25000);
+    record('05_API_PING',ping?.ok===true?'PASS':'FAIL',ping?.ok===true?'SERVER_PING_OK':'BAD_PING_RESPONSE');
+   }catch(e){record('05_API_PING','FAIL',codeOf(e));}
+   const frame=document.querySelector('#erh-bcn-ui-mount-root iframe');
+   record('06_BM01_IFRAME',frame?'PASS':'NEED_BM01',frame?(String(frame.srcdoc||'').includes('P2F1052-BM01-SIGN')?'BM01_PATCH_PRESENT':'BM01_PATCH_NOT_FOUND'):'OPEN_BM01_THEN_RUN_AGAIN');
+   if(token.length>=16){
+    const request={t4CallV19:true,method:'BCN_SIG_getMy',args:[token]};
+    try{const res=await apiCall('BCN_AT_DATA_read',[token,'list',JSON.stringify(request)],35000);
+     const url=typeof res?.dataUrl==='string'?res.dataUrl:'';
+     const valid=/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(url);
+     const has=!!res?.ready;
+     const result=res?.ok===true&&valid?'PASS':res?.ok===true&&has?'NO_IMAGE':res?.ok===true?'NO_SIGNATURE':'FAIL';
+     record('07_OWN_SIGNATURE_API',result,'OK_'+!!res?.ok+'_READY_'+has+'_IMAGE_'+valid+'_SIZE_'+(url.length>0?'PRESENT':'EMPTY'));
+    }catch(e){record('07_OWN_SIGNATURE_API','FAIL',codeOf(e));}
+   }else record('07_OWN_SIGNATURE_API','NEED_LOGIN','LOGIN_THEN_RUN_AGAIN');
+  }catch(e){record('99_DIAG','FAIL','DIAGNOSTIC_ERROR');}
+  finally{run.disabled=false;}
+ }
+ run.addEventListener('click',check);
+ $('erhDg53Copy').addEventListener('click',async()=>{
+  const txt=JSON.stringify(state,null,2);
+  try{await navigator.clipboard.writeText(txt);$('erhDg53Copy').textContent='ĐÃ SAO CHÉP';}
+  catch(e){out.textContent=txt+'\n\nChọn và sao chép nội dung kiểm tra phía trên.';}
+ });
+})();
+</script>
+<!-- P2F1053-DIAG-END -->
 </body>
 </html>
