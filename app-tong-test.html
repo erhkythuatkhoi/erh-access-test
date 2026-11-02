@@ -2016,5 +2016,140 @@ Không thay đổi xác thực, phân quyền, API, tải hoặc lưu dữ liệ
 })();
 </script>
 <!-- P2F1053-DIAG-END -->
+<!-- BC33-P2F1057-GIT-READONLY-DIAG -->
+<script>
+/* P2F1057 - ERH Git TEST: read-only BC33 RPC diagnosis.
+ * No writes, no credential output, no source-module mutation.
+ */
+(function () {
+  'use strict';
+  if (window.__ERH_BC33_P2F1057_DIAG_INSTALLED__) return;
+  window.__ERH_BC33_P2F1057_DIAG_INSTALLED__ = true;
+  if (location.hostname !== 'erhkythuatkhoi.github.io' ||
+      !location.pathname.endsWith('/erh-access-test/app-tong-test.html')) return;
+  const TASK_ID = 'GV-20261102-090007-4432F'; // Verified: 2 GV_CHI_TIET in EOB.
+  const VERSION = 'P2F1057_GIT_RPC_READONLY';
+  const now = () => new Date().toISOString();
+  const state = {running:false, report:null, seen:[]};
+  const style = document.createElement('style');
+  style.textContent = '#erh-p2f1057-open{position:fixed;bottom:16px;left:216px;z-index:2147483646;border:1px solid #1c6ca0;border-radius:8px;background:#124b74;color:#fff;padding:9px 12px;font:bold 12px Arial;cursor:pointer}' +
+    '#erh-p2f1057-panel{position:fixed;left:216px;bottom:57px;width:min(590px,calc(100vw - 232px));max-height:72vh;overflow:auto;z-index:2147483646;border:1px solid #95b4cc;border-radius:9px;background:#fff;color:#102d42;box-shadow:0 4px 20px #0003;padding:12px;font:12px Arial}' +
+    '#erh-p2f1057-panel[hidden]{display:none!important}#erh-p2f1057-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f5f9;padding:8px;line-height:1.35;max-height:38vh;overflow:auto}' +
+    '#erh-p2f1057-panel button{margin:4px 5px 4px 0;padding:6px 9px;border:1px solid #99b2c8;border-radius:6px;background:#fff;color:#173c5d;cursor:pointer;font-weight:700}' +
+    '#erh-p2f1057-panel button:disabled{opacity:.55;cursor:wait}';
+  document.head.appendChild(style);
+  const open = document.createElement('button');
+  open.type = 'button'; open.id = 'erh-p2f1057-open';
+  open.textContent = 'KIỂM TRA BC33 P2F1057';
+  const panel = document.createElement('div');
+  panel.id = 'erh-p2f1057-panel'; panel.hidden = true;
+  panel.innerHTML = '<strong>CHẨN ĐOÁN BC33 GIT TEST – P2F1057</strong>' +
+    '<p>Chỉ đọc; không gửi báo cáo, không lưu CSDL. Không sao chép token hoặc dữ liệu chi tiết.</p>' +
+    '<button type="button" id="erh-p2f1057-run">CHẠY KIỂM TRA</button>' +
+    '<button type="button" id="erh-p2f1057-copy" disabled>SAO CHÉP KẾT QUẢ</button>' +
+    '<button type="button" id="erh-p2f1057-close">ĐÓNG</button>' +
+    '<div id="erh-p2f1057-status">Sẵn sàng. Hãy đăng nhập trước khi chạy.</div>' +
+    '<pre id="erh-p2f1057-result"></pre>';
+  document.body.append(open,panel);
+  const byId = id => document.getElementById('erh-p2f1057-' + id);
+  const statusEl = byId('status'), resultEl = byId('result'), runBtn = byId('run'), copyBtn = byId('copy');
+  open.onclick = () => {panel.hidden = !panel.hidden;};
+  byId('close').onclick = () => {panel.hidden = true;};
+  function failCode(err) {
+    const v = String(err && (err.message || err) || 'UNKNOWN');
+    if (/session|phiên đăng nhập|hết hạn/i.test(v)) return 'SESSION_ERROR';
+    if (/40 giây|45 giây|thời gian|timeout|sau 40|sau 45/i.test(v)) return 'TIMEOUT';
+    if (/Không hoàn tất yêu cầu máy chủ TEST/i.test(v)) return 'SERVER_REJECTION_MASKED_BY_TRANSPORT';
+    if (/^([A-Z][A-Z0-9_]{3,64})$/.test(v)) return v;
+    return 'RPC_FAILURE_GENERIC';
+  }
+  function getToken(){return typeof window.ERH_AUTH_token === 'function' ? window.ERH_AUTH_token() : '';}
+  function rpc(method,args) {
+    return new Promise((resolve,reject) => {
+      let done = false;
+      const timeout = setTimeout(() => finish(new Error('TIMEOUT')), 46000);
+      function finish(err,value) {if(done)return;done=true;clearTimeout(timeout);err?reject(err):resolve(value);}
+      try {
+        if(!window.google || !window.google.script || !window.google.script.run)throw Error('NO_GIT_TRANSPORT');
+        window.google.script.run
+          .withSuccessHandler(value => finish(null,value))
+          .withFailureHandler(err => finish(err))
+          [method](...args);
+      }catch(err){finish(err);}
+    });
+  }
+  function summarizeTask(r) {
+    if (r == null) return {type:'null'};
+    if (typeof r !== 'object') return {type:typeof r};
+    const details = Array.isArray(r.details)?r.details:null;
+    return {ok:r.ok === true, schemaVersion:String(r.schemaVersion || ''), taskPresent:!!r.task,
+      taskMatches:r.task ? String(r.task.id || r.task.taskId || '')===TASK_ID : false,
+      detailCount:details?details.length:null,
+      assignedCount:details?details.filter(d=>Number(d.assigned)>=0).length:null};
+  }
+  function emit(report) {state.report = report; resultEl.textContent = JSON.stringify(report,null,2);copyBtn.disabled=false;}
+  async function check(label,method,args,summarize){
+    const begin = Date.now();
+    try {const raw=await rpc(method,args);
+      return {step:label,status:'PASS_RPC',elapsedMs:Date.now()-begin,result:summarize(raw)};
+    }catch(error){return {step:label,status:'FAIL_RPC',elapsedMs:Date.now()-begin,errorCode:failCode(error)};}
+  }
+  function summarizeBatch(data){
+    if (!data || typeof data!=='object')return {valid:false};
+    const results=Array.isArray(data.results)?data.results:[];
+    const first=results.find(r=>r && r.id==='fast');
+    const list=results.find(r=>r && r.id==='list');
+    const tasks=list&&list.ok?(Array.isArray(list.result)?list.result:(Array.isArray(list.result?.tasks)?list.result.tasks:null)):null;
+    return {ok:data.ok===true,version:String(data.version||''),resultCount:results.length,
+      fast:{ok:first?.ok===true,errorCode:first?.ok===false?failCode(first.error):null,summary:first?.ok?summarizeTask(first.result):null},
+      list:{ok:list?.ok===true,errorCode:list?.ok===false?failCode(list.error):null,taskCount:tasks?tasks.length:null,
+      includesTarget:tasks?tasks.some(t=>String(t.id||t.taskId||'')===TASK_ID):null}};
+  }
+  async function run() {
+    if(state.running)return;
+    state.running=true;runBtn.disabled=true;copyBtn.disabled=true;
+    const report={version:VERSION,time:now(),urlPath:location.pathname,taskId:TASK_ID,steps:[],observation:null,diagnosis:'NOT_DETERMINED'};
+    const token=getToken();
+    if(!token){report.diagnosis='LOGIN_REQUIRED';emit(report);statusEl.textContent='Chưa có phiên đăng nhập Git.';state.running=false;runBtn.disabled=false;return;}
+    statusEl.textContent='Đang kiểm tra phiên bản máy chủ TEST…';
+    report.steps.push(await check('01_PING_EXEC','ERH_P2F1020_ping',[],r=>({ok:r?.ok===true,version:String(r?.version||''),bc33OriginalWriteRoute:r?.bc33OriginalWriteRoute===true})));
+    if(getToken()!==token){report.diagnosis='SESSION_CHANGED';emit(report);statusEl.textContent='Phiên đã thay đổi, dừng kiểm tra.';state.running=false;runBtn.disabled=false;return;}
+    statusEl.textContent='Đang so sánh tuyến BC33 batch và direct; không ghi CSDL…';
+    const reads=await Promise.all([
+      check('02_SESSION','ERH_AUTH_checkSession',[token],r=>({responseType:typeof r,ok:r?.ok!==false})),
+      check('03_BATCH_TASKFAST','ERH_T4_BC33_originalBatch',[[
+        {id:'fast',method:'ERH_BC33_taskFast',args:[token,TASK_ID]},
+        {id:'list',method:'ERH_BC33_tasks',args:[token]}
+      ],token],summarizeBatch),
+      check('04_DIRECT_TASKFAST','ERH_T4_BC33_originalRead',['ERH_BC33_taskFast',[token,TASK_ID],token],summarizeTask)
+    ]);
+    report.steps.push(...reads);
+    const ping=report.steps[0],batch=report.steps[2],direct=report.steps[3];
+    const version=ping.result?.version||'';
+    const n=batch.result?.fast?.summary?.detailCount;
+    if(ping.status!=='PASS_RPC')report.diagnosis='PING_EXEC_FAILED';
+    else if(ping.result?.bc33OriginalWriteRoute!==true)report.diagnosis='OLD_EXEC_DEPLOYMENT_NOT_P2F1054';
+    else if(batch.status==='FAIL_RPC')report.diagnosis='BATCH_TRANSPORT_FAILED';
+    else if(batch.result?.fast?.ok!==true)report.diagnosis='BATCH_SERVER_METHOD_FAILED';
+    else if(n===0)report.diagnosis='BATCH_RETURNED_NO_DETAILS__CHECK_READ_POLICY';
+    else if(n!==2)report.diagnosis='BATCH_DETAIL_COUNT_MISMATCH';
+    else if(direct.status==='FAIL_RPC')report.diagnosis='DIRECT_ROUTE_REJECTED__P2F1054_TOKEN_POSITION_GUARD';
+    else if(direct.result?.detailCount!==2)report.diagnosis='DIRECT_RESULT_MISMATCH';
+    else report.diagnosis='SERVER_READS_PASS__CHECK_BC33_IFRAME_SELECTION';
+    report.observation={expectedDetailCount:2,batchDetailCount:typeof n==='number'?n:null,directDetailCount:typeof direct.result?.detailCount==='number'?direct.result.detailCount:null,serverVersion:version};
+    if(getToken()!==token)report.diagnosis='SESSION_CHANGED_DURING_TEST';
+    emit(report);statusEl.textContent='Đã hoàn thành – '+report.diagnosis;
+    state.running=false;runBtn.disabled=false;
+  }
+  runBtn.onclick=()=>{run().catch(err=>{statusEl.textContent='Không hoàn thành phép kiểm tra: '+failCode(err);runBtn.disabled=false;state.running=false;});};
+  copyBtn.onclick=()=>{
+    if(!state.report)return;
+    const clean=JSON.stringify(state.report,null,2);
+    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(clean).then(()=>statusEl.textContent='Đã sao chép kết quả.').catch(()=>{statusEl.textContent='Không sao chép tự động được; hãy chọn nội dung trong khung.';});
+    else statusEl.textContent='Hãy chọn và sao chép nội dung trong khung.';
+  };
+})();
+
+</script>
 </body>
 </html>
