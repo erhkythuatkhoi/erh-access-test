@@ -1,3 +1,4 @@
+<!-- ERH-GV-CACHE-PRIORITY-0311-TEST: GV RPC only; no server revision API -->
 <!-- P2F1071-BC33-PENDING-RECONCILE-GIT-TEST -->
 <!-- ERH-D32.2-PLAN-BUTTON-ON-PLAN-ROW-ONLY -->
 <!-- ERH-D32.1-PLAN-BUTTON-THIRD-COLUMN-20261031 -->
@@ -1580,7 +1581,10 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     }
     const batchMethods=new Set(['APP_WEB_bootstrap','APP_WEB_getAssignmentSources','APP_GIAOVIEC_getMyTasks','APP_BAOCAO_getMyHistory','APP_DASHBOARD_getSummary','APP_GIAOVIEC_V5_getSourceMap','APP_GIAOVIEC_V5_getTaskForEdit','APP_DIADIEM_getAll','ERH_V8_myAssignments','ERH_V9_getTask','ERH_V9_canEditCatalog','ERH_GV14_unassignedPlans','ERH_GV14_runtimeReadOnlyV11410','ERH_CTD_list','ERH_CT_getDetails','ERH_BC33_getCompleted','ERH_BC33_listCompleted']);
     const readMethods=new Set([...batchMethods,'APP_BAOCAO_getMyDailyReport','ERH_BC33_viewCompleted','ERH_BC_V3_pending']);
-    const staticMethods=new Set(['APP_WEB_getAssignmentSources','APP_GIAOVIEC_V5_getSourceMap','APP_DIADIEM_getAll']);
+    const staticMethods=new Set(['APP_WEB_getAssignmentSources','APP_GIAOVIEC_V5_getSourceMap','APP_DIADIEM_getAll','APP_GIAOVIEC_getMyTasks','ERH_V8_myAssignments','APP_DASHBOARD_getSummary','ERH_GV14_unassignedPlans','ERH_BC33_getCompleted','ERH_BC33_listCompleted']);
+    // GV CACHE 0311: session-local cache; authorization and project belong to this adapter instance.
+    // Server-side source revisions are not available in this HTML, so mutable results use a safety TTL.
+    const cacheTTL={APP_WEB_getAssignmentSources:300000,APP_GIAOVIEC_V5_getSourceMap:300000,APP_DIADIEM_getAll:300000,APP_GIAOVIEC_getMyTasks:45000,ERH_V8_myAssignments:45000,APP_DASHBOARD_getSummary:45000,ERH_GV14_unassignedPlans:60000,ERH_BC33_getCompleted:45000,ERH_BC33_listCompleted:45000};
     // R5: only failed reads affect the data status. A rejected save is not a read failure.
     function readErrorKey(job){return job.method+'|'+JSON.stringify(job.args||[]);}
     function safeRpcError(error){return String(error||'Máy chủ chưa xác nhận kết quả.').split(rpcToken).join('[phiên đăng nhập]');}
@@ -1610,7 +1614,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       }
       if(ok&&!job.cached&&job.epoch===rpcEpoch&&staticMethods.has(job.method)){
         if(staticReads.size>=32)staticReads.delete(staticReads.keys().next().value);
-        staticReads.set(job.key,{value:result,until:Date.now()+30000});
+        staticReads.set(job.key,{value:result,until:Date.now()+(cacheTTL[job.method]||30000)});
       }
       job.ids.forEach(function(id){frame.contentWindow.postMessage({type:'ERH_TAB4_GV_RPC_RESULT_V1',id:id,ok:ok,result:result,error:error},'*');});
     }
@@ -1680,7 +1684,11 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       if(key&&readInFlight.has(key)){readInFlight.get(key).ids.push(id);return;}
       const job={method:request.method,args:request.args,ids:[id],key:key,writeKey:writeKey,epoch:rpcEpoch,enqueuedAt:Date.now()};
       if(writeKey)writeInFlight.set(writeKey,job);
-      if(key)readInFlight.set(key,job);if(job.method==='APP_WEB_bootstrap')rpcQueue.unshift(job);else rpcQueue.push(job);if(reading)renderRpcStatus();scheduleRpc();
+      if(key)readInFlight.set(key,job);
+      // Prioritize explicit detail/plan selection over background reads; never overtake a queued write.
+      const urgent=job.method==='APP_WEB_bootstrap'||['APP_GIAOVIEC_V5_getTaskForEdit','ERH_V9_getTask','ERH_CT_getDetails','ERH_GV14_unassignedPlans'].includes(job.method);
+      if(urgent){let insertAt=0;for(let i=0;i<rpcQueue.length;i++)if(writeMethods.has(rpcQueue[i].method))insertAt=i+1;rpcQueue.splice(insertAt,0,job);}else rpcQueue.push(job);
+      if(reading)renderRpcStatus();scheduleRpc();
     }
     const heightHandler=function(event){
       if(event.source!==frame.contentWindow || !event.data)return;
@@ -2162,5 +2170,4 @@ Không thay đổi xác thực, phân quyền, API, tải hoặc lưu dữ liệ
 </script>
 </body>
 </html>
-
 
