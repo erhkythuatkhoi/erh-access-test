@@ -1439,6 +1439,14 @@ function mount(root,ctx){
   let done=false,timer=null;
   function reply(ok,result,error){if(done)return;done=true;clearTimeout(timer);pending.delete(reply);if(!live())return;if(!sameSession()){ok=false;result=null;error='Phiên đăng nhập đã thay đổi.';}frame.contentWindow.postMessage({type:'ERH_T4_BC33O_RESULT_V17',id:String(req.id),ok,result,error},'*');}
   if(!sameSession()){reply(false,null,'Phiên đăng nhập đã thay đổi.');return;}
+  // P2F1063 BC33-GIT-SESSION-BRIDGE: the sandboxed BC33 srcdoc has only
+  // a deliberately fake localStorage token. Its RPCs must be forwarded using
+  // the parent's freshly checked authenticated token, as DEV does natively.
+  // Map ONLY exact top-level token sentinels; never modify business payloads,
+  // requestId, detail data, module permissions, or the server's write gates.
+  req=Object.assign({},req,{args:req.args.map(function(a){
+   return a==='ERH_HOST_SESSION'?token:a;
+  })});
   pending.add(reply);timer=setTimeout(function(){reply(false,null,'Máy chủ chưa trả dữ liệu sau 45 giây.');},45000);
   if(BATCH_READ_METHODS.has(req.method)&&!(readBusy&&['ERH_BC33_task','ERH_BC33_taskFast'].indexOf(req.method)>=0)){readQueue.push({req,reply,isPending:function(){return !done;}});scheduleReads();return;}
   try{google.script.run.withSuccessHandler(function(result){reply(true,result,'');}).withFailureHandler(function(error){reply(false,null,String(error?.message||error));}).ERH_T4_BC33_originalRead(req.method,req.args,token);}catch(error){reply(false,null,String(error?.message||error));}
