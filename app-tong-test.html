@@ -921,39 +921,47 @@ const ERH_T4_ADAPTERS=Object.create(null);
 let ERH_T4_ACTIVE=null;
 // P3.B TEST: retain the GV iframe in a connected, hidden content root.
 // Detaching/reparenting an iframe can reload its document, so swap #content roots instead.
-let ERH_P3B_PARKED=null;
-function ERH_P3B_discard(){
-  const parked=ERH_P3B_PARKED;
-  if(!parked)return;
-  ERH_P3B_PARKED=null;
-  try{const a=ERH_T4_ADAPTERS.GV;if(a&&typeof a.unmount==='function')a.unmount();}catch(e){console.warn('[P3B] discard',String(e));}
-  try{parked.root.remove();}catch(e){}
+// ERH-T4-RETAIN-0311: Keep the three loaded module roots connected when switching tabs.
+// An iframe reloads if detached: park its entire root instead of reloading srcdoc.
+const ERH_P3B_PARKED=Object.create(null);
+function ERH_P3B_discardOne(id){
+  const p=ERH_P3B_PARKED[id];if(!p)return;
+  delete ERH_P3B_PARKED[id];
+  try{const a=ERH_T4_ADAPTERS[id];if(a&&typeof a.unmount==='function')a.unmount();}
+  catch(e){console.warn('[TAB4 retain] discard',id,String(e));}
+  try{p.root.remove();}catch(e){}
 }
-function ERH_P3B_park(){
+function ERH_P3B_discard(){
+  Object.keys(ERH_P3B_PARKED).forEach(ERH_P3B_discardOne);
+}
+function ERH_P3B_park(id){
+  if(!['GV','BC33','BCN'].includes(id))return false;
   const root=document.querySelector('#content');
   if(!root||!root.parentNode)return false;
   const token=typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';
   if(!token)return false;
-  // Session token remains only in JS memory, never DOM, srcdoc, localStorage or logs.
-  ERH_P3B_PARKED={root,token,project:String(state.projectId||''),actor:String(perf07Actor||'')};
-  root.removeAttribute('id');root.id='erh-p3b-gv-parked';root.hidden=true;root.style.display='none';
-  const fresh=document.createElement('div');fresh.id='content';root.parentNode.insertBefore(fresh,root.nextSibling);
+  if(ERH_P3B_PARKED[id])ERH_P3B_discardOne(id);
+  // Keep the token only in JS memory; never in storage, DOM or logs.
+  ERH_P3B_PARKED[id]={root,token,project:String(state.projectId||''),actor:String(perf07Actor||'')};
+  root.id='erh-p3b-'+id.toLowerCase()+'-parked';
+  root.hidden=true;root.style.display='none';
+  const fresh=document.createElement('div');fresh.id='content';
+  root.parentNode.insertBefore(fresh,root.nextSibling);
   return true;
 }
-function ERH_P3B_resume(){
-  const p=ERH_P3B_PARKED;
-  if(!p)return false;
+function ERH_P3B_resume(id){
+  const p=ERH_P3B_PARKED[id];if(!p)return false;
   const token=typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';
   if(!token||token!==p.token||String(state.projectId||'')!==p.project||String(perf07Actor||'')!==p.actor){
-    ERH_P3B_discard();return false;
+    ERH_P3B_discardOne(id);return false;
   }
   const activeRoot=document.querySelector('#content');
-  if(!activeRoot||!activeRoot.parentNode)return false;
+  if(!activeRoot||!activeRoot.parentNode||!p.root.isConnected)return false;
   activeRoot.remove();
   p.root.id='content';p.root.hidden=false;p.root.style.display='';
-  ERH_P3B_PARKED=null;
-  ERH_T4_ACTIVE='GV';
-  console.info('[ERH P3.B GV] reused connected iframe; no srcdoc reload');
+  delete ERH_P3B_PARKED[id];
+  ERH_T4_ACTIVE=id;
+  console.info('[TAB4 retain] resumed',id,'without iframe reload');
   return true;
 }
 window.ERH_T4_registerModule=function(id,adapter){
@@ -965,7 +973,7 @@ window.ERH_T4_registerModule=function(id,adapter){
 };
 function ERH_T4_teardown(){
   if(!ERH_T4_ACTIVE)return;
-  if(ERH_T4_ACTIVE==='GV'&&ERH_P3B_park()){
+  if(ERH_P3B_park(ERH_T4_ACTIVE)){
     ERH_T4_ACTIVE=null;
     return;
   }
@@ -989,7 +997,7 @@ function ERH_T4_tryMount(page){
     return true;
   }
   // Fast return: original iframe stays connected and retains form state.
-  if(id==='GV'&&ERH_P3B_resume()){window.ERH_D15_TOP?.refresh();return true;}
+  if(ERH_P3B_resume(id)){window.ERH_D15_TOP?.refresh();return true;}
   const root=document.querySelector('#content');
   const getToken=()=>typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';
   const token=getToken();
