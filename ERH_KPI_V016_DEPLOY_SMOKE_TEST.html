@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ERH KPI V0.16 – Kiểm thử API chỉ đọc</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#17334c;background:#f3f7fa}body{margin:0;padding:18px}.wrap{max-width:760px;margin:auto}.card{background:white;padding:18px;margin:12px 0;border:1px solid #dce6ef;border-radius:10px}button{border:0;border-radius:8px;padding:12px 16px;margin:4px 6px 4px 0;background:#164b75;color:white;font-weight:bold}button:disabled{opacity:.5}pre{white-space:pre-wrap;word-break:break-word;background:#edf3f7;padding:12px;border-radius:8px;font-size:12px}.muted{color:#62798a}#sink{position:absolute;left:-9999px;width:1px;height:1px}
+</style></head>
+<body><main class="wrap"><h2>ERH KPI – Smoke test Web App TEST</h2><div class="card"><b>Chỉ kiểm tra API, không ghi dữ liệu</b><p class="muted">Không nhập mật khẩu hoặc token. Chỉ thử PING và yêu cầu KPI sử dụng phiên giả. Không kiểm chứng quyền của tài khoản đã đăng nhập.</p><p>Endpoint: <code>AKfycbyOfAesc3_-60IPPF... /exec</code></p><button id="ping">1. Kiểm tra PING</button><button id="deny">2. Kiểm tra từ chối phiên giả</button><p id="state">Chưa chạy</p><pre id="output">{}</pre><button id="copy" type="button">Sao chép kết quả không nhạy cảm</button></div></main><div id="sink"></div>
+<script>
+'use strict';
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyOfAesc3_-60IPPFmT78FFEWWSWMa8SHGbbWiCS36ZnftKqv_FdkHVIVHlljjTtdq5rw/exec';
+const PREFIX='erh_kpi_v016_';
+let pending=null,results=[];
+const output=document.getElementById('output'),state=document.getElementById('state');
+function display(){output.textContent=JSON.stringify(results,null,2)}
+function nonce(){const b=new Uint8Array(20);crypto.getRandomValues(b);return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('')}
+function finish(result){if(!pending)return;clearTimeout(pending.timer);pending.form.remove();pending.frame.remove();pending=null;results.push(result);state.textContent=result.status;display();buttons(false)}
+function buttons(busy){document.querySelectorAll('button:not(#copy)').forEach(b=>b.disabled=busy)}
+window.addEventListener('message',e=>{
+  if(!pending || !['https://script.google.com','https://script.googleusercontent.com'].includes(e.origin))return;
+  let data=e.data;if(typeof data==='string'){try{data=JSON.parse(data)}catch{return}}
+  if(!data||typeof data!=='object'||data.nonce!==pending.nonce||data.app!=='ERH_APP_TOTAL_PAGES_P2F1020')return;
+  const p=pending;
+  const res={test:p.label,status:'RESPONSE',ok:data.ok===true,error:typeof data.error==='string'?data.error:null};
+  if(p.label==='PING'){res.version=(data.value&&typeof data.value.version==='string')?data.value.version:null;res.pass=res.ok && /^P2F\./.test(String(res.version))}
+  else{res.pass=data.ok===false && ['SESSION_INVALID','SERVER_ERROR'].includes(data.error);res.note=data.error==='SERVER_ERROR'?'Từ chối yêu cầu, nhưng mã lỗi bị ẩn: chưa xác nhận nguyên nhân xác thực.':null}
+  res.status=res.pass?'PASS_SMOKE':'FAIL_SMOKE';finish(res);
+});
+function post(label,method,args){if(pending)return;buttons(true);state.textContent='Đang kiểm tra '+label;
+  const n=nonce(),target=PREFIX+n,frame=document.createElement('iframe');frame.name=target;frame.setAttribute('title','ERH API test hidden response');frame.style.display='none';
+  const form=document.createElement('form');form.action=ENDPOINT;form.method='POST';form.target=target;form.style.display='none';
+  for(const [k,v] of Object.entries({nonce:n,method,args:JSON.stringify(args)})){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i)}
+  document.getElementById('sink').append(frame,form);pending={nonce:n,label,frame,form,timer:setTimeout(()=>finish({test:label,status:'TIMEOUT',pass:false,note:'Không nhận được phản hồi trong 15 giây; kiểm tra deployment, quyền truy cập và iframe.'}),15000)};
+  form.submit();
+}
+document.getElementById('ping').onclick=()=>post('PING','ERH_P2F1020_ping',[]);
+document.getElementById('deny').onclick=()=>post('INVALID_SESSION','ERH_KPI_getOptions',['INVALID_TEST_TOKEN_000000000000']);
+document.getElementById('copy').onclick=()=>{const safe=JSON.stringify(results,null,2);navigator.clipboard.writeText(safe).then(()=>{state.textContent='Đã sao chép kết quả';}).catch(()=>{state.textContent='Hãy sao chép thủ công nội dung ô kết quả';})};
+</script></body></html>
