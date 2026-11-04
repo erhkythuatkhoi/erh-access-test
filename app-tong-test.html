@@ -2176,6 +2176,72 @@ Không thay đổi xác thực, phân quyền, API, tải hoặc lưu dữ liệ
 })();
 
 </script>
+<!-- ERH-GV-CANCEL-V6-PREVIEW-ONLY-20261104 -->
+<style>
+#erhGvc6Launch{position:fixed;right:20px;bottom:20px;z-index:10030;border:1px solid #91adc6;background:#174b74;color:white;border-radius:12px;padding:11px 15px;font:600 13px Arial,sans-serif;box-shadow:0 3px 12px #0002;cursor:pointer;display:none}
+#erhGvc6Shade{position:fixed;inset:0;background:rgba(9,27,49,.5);z-index:10040;display:none;align-items:center;justify-content:center;padding:14px}
+#erhGvc6Shade[data-open="yes"]{display:flex}
+#erhGvc6Panel{width:min(100%,570px);max-height:90vh;overflow:auto;border:1px solid #bed0df;background:#fff;border-radius:14px;padding:20px;box-shadow:0 12px 36px #0004;color:#1e3449;font:14px Arial,sans-serif}
+#erhGvc6Panel label{display:block;margin-top:12px;font-weight:600}
+#erhGvc6Panel input{width:100%;box-sizing:border-box;margin-top:7px;padding:11px;border:1px solid #b7c9d8;border-radius:8px;font:14px Arial,sans-serif}
+#erhGvc6Panel button{padding:10px 12px;border:1px solid #91adc6;border-radius:8px;background:#ecf3fa;color:#173d5a;cursor:pointer}
+#erhGvc6Panel button:disabled{opacity:.55;cursor:not-allowed}
+#erhGvc6Panel .gvc6Row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+#erhGvc6Result{margin-top:14px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #e0e8f0;background:#f6f9fc;padding:12px;border-radius:8px;min-height:55px;line-height:1.5}
+@media(max-width:600px){#erhGvc6Launch{right:12px;bottom:12px}#erhGvc6Panel{padding:14px}}
+</style>
+<button type="button" id="erhGvc6Launch" aria-label="Kiểm tra điều kiện hủy giao việc">Kiểm tra hủy GV</button>
+<div id="erhGvc6Shade" aria-hidden="true"><div id="erhGvc6Panel" role="dialog" aria-modal="true" aria-labelledby="erhGvc6Title">
+ <div class="gvc6Row" style="justify-content:space-between;margin-top:0"><strong id="erhGvc6Title">Kiểm tra điều kiện hủy giao việc · TEST V6</strong><button type="button" id="erhGvc6Close">Đóng</button></div>
+ <p>Nhập mã phiếu GV cần kiểm tra. Máy chủ xác minh người giao, người nhận, quyền quản lý, trạng thái và các báo cáo liên kết.</p>
+ <label for="erhGvc6Id">Mã phiếu GV</label><input id="erhGvc6Id" type="text" autocomplete="off" maxlength="100" placeholder="GV-20261104-..." />
+ <div class="gvc6Row"><button id="erhGvc6Preview" type="button">Kiểm tra quyền và trạng thái</button><span id="erhGvc6Busy" role="status"></span></div>
+ <div id="erhGvc6Result" role="status" aria-live="polite">Chưa kiểm tra.</div>
+ <p style="color:#9a391f;font-size:12px">Chế độ chỉ đọc: không gửi lệnh hủy hoặc đề nghị hủy; không thay đổi phiếu hay dữ liệu BC33/BM01. Chức năng ghi chỉ được mở sau khi nghiệm thu API và phân quyền thực tế.</p>
+</div></div>
+<script id="erh-gv-cancel-v6-preview-only">
+(function(){'use strict';
+const launch=document.getElementById('erhGvc6Launch'),shade=document.getElementById('erhGvc6Shade'),close=document.getElementById('erhGvc6Close');
+const entry=document.getElementById('erhGvc6Id'),preview=document.getElementById('erhGvc6Preview'),result=document.getElementById('erhGvc6Result'),busy=document.getElementById('erhGvc6Busy');
+let pending=false,activeToken='';
+function getToken(){return typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';}
+function isGV(){return !!document.querySelector('#content iframe[data-erh-d15-module="GV"]')&&getToken().length>=16;}
+function sync(){const visible=isGV();launch.style.display=visible?'block':'none';if(!visible&&shade.dataset.open==='yes')hide();}
+function show(){if(!isGV())return;activeToken=getToken();shade.dataset.open='yes';shade.setAttribute('aria-hidden','false');entry.focus();}
+function hide(){shade.dataset.open='no';shade.setAttribute('aria-hidden','true');entry.value='';result.textContent='Chưa kiểm tra.';busy.textContent='';}
+launch.addEventListener('click',show);close.addEventListener('click',hide);shade.addEventListener('click',e=>{if(e.target===shade)hide();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&shade.dataset.open==='yes')hide();});
+function clean(s){return String(s||'').replace(/[\r\n<>]/g,' ').slice(0,180);}
+function summarize(data){
+ if(!data||data.ok!==true)throw Error('SERVER_PREVIEW_INVALID');
+ const p=data.permissions||{},l=data.links||{};
+ const lines=['Mã phiếu: '+clean(data.taskId),'Trạng thái: '+clean(data.status),'Dự án: '+clean(data.project),
+  'Quyền hủy: '+(p.canCancel?'CÓ':'KHÔNG'),'Quyền đề nghị hủy: '+(p.canRequest?'CÓ':'KHÔNG'),
+  'Đủ điều kiện hủy: '+(data.canApply?'CÓ':'KHÔNG')];
+ Object.keys(l).sort().forEach(k=>{const z=l[k]||{};lines.push(clean(k)+': '+clean(z.state)+(typeof z.count==='number'?' ('+z.count+' liên kết)':''));});
+ if(data.note)lines.push('Ghi chú: '+clean(data.note));lines.push('V6 chỉ xem; chưa thực hiện hủy.');return lines.join('\n');
+}
+preview.addEventListener('click',function(){
+ if(pending)return;
+ const id=entry.value.trim(),token=getToken();
+ if(!/^GV-[A-Z0-9-]{8,95}$/i.test(id)){result.textContent='Mã GV không hợp lệ.';return;}
+ if(token.length<16||token!==activeToken||!isGV()){result.textContent='Phiên đăng nhập đã thay đổi. Mở lại chức năng sau khi đăng nhập.';return;}
+ if(!window.google?.script?.run){result.textContent='Chưa có cầu nối máy chủ.';return;}
+ pending=true;preview.disabled=true;busy.textContent='Đang kiểm tra…';result.textContent='Đang xác minh tại máy chủ TEST.';
+ let settled=false;const timer=setTimeout(()=>finish(null,'Không nhận được phản hồi máy chủ trong 35 giây.'),35000);
+ function finish(data,error){if(settled)return;settled=true;clearTimeout(timer);pending=false;preview.disabled=false;busy.textContent='';
+  if(shade.dataset.open!=='yes')return;
+  if(getToken()!==token){result.textContent='Phiên đăng nhập đã thay đổi. Không dùng kết quả cũ.';return;}
+  try{result.textContent=error?clean(error):summarize(data);}catch(e){result.textContent='Dữ liệu phản hồi chưa đúng cấu trúc: '+clean(e.message);}
+ }
+ try{window.google.script.run.withSuccessHandler(r=>finish(r,null)).withFailureHandler(e=>finish(null,e&&e.message||'API chưa sẵn sàng')).ERH_GV_CANCEL_V5('GV_CANCEL_PREVIEW',[id],token);}
+ catch(e){finish(null,e&&e.message||'Chưa gọi được API V5');}
+});
+const monitor=new MutationObserver(sync);monitor.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+window.addEventListener('pageshow',sync);sync();
+})();
+</script>
+
 </body>
 </html>
 
