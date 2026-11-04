@@ -2205,7 +2205,7 @@ const launch=document.getElementById('erhGvc6Launch'),shade=document.getElementB
 const entry=document.getElementById('erhGvc6Id'),preview=document.getElementById('erhGvc6Preview'),result=document.getElementById('erhGvc6Result'),busy=document.getElementById('erhGvc6Busy');
 let pending=false,activeToken='';
 function getToken(){return typeof window.ERH_AUTH_token==='function'?String(window.ERH_AUTH_token()||''):'';}
-function isGV(){return !!document.querySelector('#content iframe[data-erh-d15-module="GV"]')&&getToken().length>=16;}
+function isGV(){return document.body.getAttribute("data-erh-d15-module")==="GV"&&getToken().length>=16;}
 function sync(){const visible=isGV();launch.style.display=visible?'block':'none';if(!visible&&shade.dataset.open==='yes')hide();}
 function show(){if(!isGV())return;activeToken=getToken();shade.dataset.open='yes';shade.setAttribute('aria-hidden','false');entry.focus();}
 function hide(){shade.dataset.open='no';shade.setAttribute('aria-hidden','true');entry.value='';result.textContent='Chưa kiểm tra.';busy.textContent='';}
@@ -2238,6 +2238,7 @@ preview.addEventListener('click',function(){
  catch(e){finish(null,e&&e.message||'Chưa gọi được API V5');}
 });
 const monitor=new MutationObserver(sync);monitor.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+const routeMonitor=new MutationObserver(sync);routeMonitor.observe(document.body,{attributes:true,attributeFilter:["data-erh-d15-module"]});
 window.addEventListener('pageshow',sync);sync();
 })();
 </script>
