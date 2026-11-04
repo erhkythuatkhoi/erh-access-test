@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ERH KPI V0.17 – Chẩn đoán đường truyền chỉ đọc</title>
+<style>body{font:15px system-ui,Arial,sans-serif;max-width:770px;margin:24px auto;padding:0 14px;color:#18344c;background:#f4f7fa}h1{font-size:23px}.box{background:#fff;border:1px solid #d8e1eb;border-radius:10px;padding:17px;margin-bottom:14px}button{padding:12px 14px;border:0;border-radius:7px;background:#164d77;color:#fff;margin:4px;cursor:pointer}button:disabled{opacity:.55}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef3f7;padding:12px;border-radius:7px}small{color:#576c81}.warn{background:#fff4da;border-left:4px solid #d4a02c;padding:10px}iframe{position:absolute;left:-9999px;top:0;width:2px;height:2px;border:0}</style>
+</head><body><h1>ERH KPI – Chẩn đoán kết nối V0.17</h1>
+<div class="box"><p class="warn">Chỉ dùng phương thức PING và yêu cầu phiên giả. Không nhập mật khẩu, không lấy phiên thật, không ghi Google Sheet, không sửa mã App Tổng.</p><p><small>Máy chủ: Apps Script TEST – deployment 35. Giới hạn chờ: 60 giây. Trạng thái iframe và thông điệp được tổng hợp mà không lưu nội dung nhạy cảm.</small></p>
+<button id="ping">1. Kiểm tra PING</button><button id="deny">2. Kiểm tra phiên giả</button><button id="copy">Sao chép kết quả</button><p id="status">Chưa chạy</p><pre id="result">[]</pre></div><div id="target"></div>
+<script>
+'use strict';
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyOfAesc3_-60IPPFmT78FFEWWSWMa8SHGbbWiCS36ZnftKqv_FdkHVIVHlljjTtdq5rw/exec';
+const ORIGINS=new Set(['https://script.google.com','https://script.googleusercontent.com']);
+const out=document.getElementById('result'),status=document.getElementById('status');let active=null,results=[];
+function id(){const b=new Uint8Array(20);crypto.getRandomValues(b);return [...b].map(n=>n.toString(16).padStart(2,'0')).join('')}
+function disable(v){document.getElementById('ping').disabled=document.getElementById('deny').disabled=v}
+function show(){out.textContent=JSON.stringify(results,null,2)}
+function complete(reason,data){if(!active)return;let a=active;active=null;clearTimeout(a.timer);a.frame.remove();a.form.remove();let res={test:a.test,status:reason,elapsedSeconds:Math.round((performance.now()-a.t0)/1000),iframeLoadCount:a.loads,iframeErrorCount:a.errors,receivedMessageCount:a.messages,receivedTrustedMessageCount:a.trusted,acceptedEnvelope:!!data,expectedResponse:false};
+ if(data){res.serverOk=data.ok===true;res.errorCode=typeof data.error==='string'?data.error:null;res.serverVersion=(a.test==='PING'&&data.value&&typeof data.value.version==='string')?data.value.version:null;res.expectedResponse=a.test==='PING'?data.ok===true&&/^P2F\./.test(String(res.serverVersion)):data.ok===false;}
+ results.push(res);show();status.textContent=a.test+': '+reason;disable(false)}
+window.addEventListener('message',ev=>{if(!active)return;active.messages++;if(!ORIGINS.has(ev.origin))return;active.trusted++;let data=ev.data;if(typeof data==='string'){try{data=JSON.parse(data)}catch{return}}if(!data||typeof data!=='object'||data.nonce!==active.nonce||data.app!=='ERH_APP_TOTAL_PAGES_P2F1020')return;complete('RESPONSE',data)});
+function run(test,method,args){if(active)return;disable(true);status.textContent='Đang kiểm tra '+test+'…';let n=id(),frame=document.createElement('iframe'),form=document.createElement('form'),name='erh_kpi_v017_'+n;frame.name=name;frame.title='Apps Script TEST response';form.action=ENDPOINT;form.method='POST';form.target=name;form.style.display='none';for(const [key,value] of Object.entries({nonce:n,method,args:JSON.stringify(args)})){const input=document.createElement('input');input.type='hidden';input.name=key;input.value=value;form.append(input)}
+ document.getElementById('target').append(frame,form);active={test,nonce:n,frame,form,t0:performance.now(),loads:0,errors:0,messages:0,trusted:0,timer:null};frame.addEventListener('load',()=>{if(active&&active.frame===frame){active.loads++;status.textContent=test+': iframe loaded '+active.loads+' lần, đang chờ phản hồi…'}});frame.addEventListener('error',()=>{if(active&&active.frame===frame)active.errors++});active.timer=setTimeout(()=>complete('TIMEOUT',null),60000);try{form.submit()}catch(e){complete('FORM_SUBMIT_ERROR',null)}}
+document.getElementById('ping').onclick=()=>run('PING','ERH_P2F1020_ping',[]);
+document.getElementById('deny').onclick=()=>run('INVALID_SESSION','ERH_KPI_getOptions',['INVALID_TEST_TOKEN_000000000000']);
+document.getElementById('copy').onclick=()=>navigator.clipboard.writeText(JSON.stringify(results,null,2)).then(()=>{status.textContent='Đã sao chép'}).catch(()=>{status.textContent='Hãy sao chép thủ công nội dung kết quả'});
+</script></body></html>
