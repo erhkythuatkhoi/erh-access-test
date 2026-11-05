@@ -15,7 +15,20 @@
     function receive(event){
       if(event.origin!=='https://script.google.com'&&event.origin!=='https://script.googleusercontent.com'&&!/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(event.origin))return;
       const d=event.data;if(!d||d.app!==APP||d.nonce!==nonce)return;
-      d.ok===true?finish(null,d.value):finish(Error(errors[d.error]||'Không hoàn tất yêu cầu máy chủ TEST.'));
+  
+const isBc33 = method === 'ERH_T4_BC33_originalRead' &&
+  Array.isArray(args) &&
+  /^ERH_BC33_(submit|submitWithEvidence|uploadEvidence|checkRequest)$/.test(
+    String(args[0] || '')
+  );
+
+d.ok === true
+  ? finish(null, d.value)
+  : finish(Error(isBc33
+      ? 'BC33_SERVER_ERROR: ' + String(d.error || 'UNKNOWN').slice(0, 240)
+      : (errors[d.error] || 'Không hoàn tất yêu cầu máy chủ TEST.')
+    ));
+
     }
     Object.entries({nonce,method,args:JSON.stringify(args)}).forEach(([name,value])=>{const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);});
     window.addEventListener('message',receive);document.body.append(frame,form);
