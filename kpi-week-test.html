@@ -53,7 +53,7 @@ function setWeeks(){const prefix=year.value+String(month.value).padStart(2,'0')+
  const prev=week.value;week.replaceChildren();weeks.forEach(w=>week.append(new Option('Tuần '+w,w)));week.value=weeks.includes(prev)?prev:(weeks[0]||'')}
 function setPeriods(list){periods=list.filter(p=>p&&/^\d{6}-T[1-4]$/.test(String(p.code||'')));const years=[...new Set(periods.map(p=>p.code.slice(0,4)))].sort();
  const prev=year.value;year.replaceChildren();years.forEach(y=>year.append(new Option(y,y)));year.value=years.includes(prev)?prev:(years[years.length-1]||'');setMonthWeek()}
-function nextPeriod(p){const m=/^(\d{4})(\d{2})-T([1-4])$/.exec(p);if(!m)return '';let yr=Number(m[1]),mo=Number(m[2]),wk=Number(m[3]);if(wk<4)return p.slice(0,7)+(wk+1);
+function nextPeriod(p){const m=/^(\d{4})(\d{2})-T([1-4])$/.exec(p);if(!m)return '';let yr=Number(m[1]),mo=Number(m[2]),wk=Number(m[3]);if(wk<4)return p.slice(0,8)+(wk+1);
  if(++mo>12){mo=1;yr++}return yr+String(mo).padStart(2,'0')+'-T1'}
 function drawAssign(list,title){const b=$('goals');b.replaceChildren();for(const r of list){const tr=document.createElement('tr');[r.group,r.code,r.indicator||r.goal,r.weight,r.target].forEach(v=>cell(tr,v));b.append(tr)}
  if(!list.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='Chưa có bản ghi kỳ giao tiếp theo trong SANDBOX.';tr.append(td);b.append(tr)}document.querySelector('#assign h3').textContent=title}
