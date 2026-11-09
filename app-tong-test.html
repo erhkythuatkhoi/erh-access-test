@@ -2562,7 +2562,18 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    var priority=normalize(t.priority||t.uuTien||t.UU_TIEN);
    if(st!=='done'&&/^(CAO|KHAN)$/.test(priority))next.priority.push(id);
   });
-  groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:next.done.length,priority:next.priority.length};last=Date.now();display();send();note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
+  // The dashboard 'Đã hoàn thành' counts distinct completed work DETAILS in BC33,
+  // not the number of closed assignment slips; this matches the original BC33
+  // reported-details list and avoids recounting the same detail across reports.
+  var closedTaskIds=new Set(next.done);
+  var completedDetails=new Set();
+  b.result.reportedLines.forEach(function(line){
+   if(!line||!closedTaskIds.has(text(line.taskId)))return;
+   var detailId=text(line.detailId);
+   var key=detailId ? text(line.taskId)+'|'+detailId : text(line.reportId)+'|'+text(line.lineId);
+   if(key&&key!=='|')completedDetails.add(key);
+  });
+  groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:completedDetails.size,priority:next.priority.length};last=Date.now();display();send();note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
  }
  function refresh(force){if(loading||!auth())return;var session=auth();if(!session){groups=null;counts=null;display();return}
   if(token!==session){token=session;groups=null;counts=null;last=0;display()}
