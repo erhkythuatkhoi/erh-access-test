@@ -2346,6 +2346,118 @@ window.addEventListener('message',function(e){
   #erhGvc6Launch { display: none !important; }
 </style>
 
+<!-- ERH_DASHBOARD_UNIFIED_V1_20261109: host-only, read-only BC33 data; no writes. -->
+<style id="ERH_DASHBOARD_UNIFIED_V1_20261109">
+#erh-shared-dashboard-v1{display:none;margin:9px 14px 0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body[data-erh-d15-module="GV"] #erh-shared-dashboard-v1,body[data-erh-d15-module="BC33"] #erh-shared-dashboard-v1{display:block}
+#erh-shared-dashboard-v1 *{box-sizing:border-box}
+#erh-shared-dashboard-v1 .erh-dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+#erh-shared-dashboard-v1 .erh-dash-card{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;text-align:center;cursor:pointer;min-height:70px;padding:7px 4px;border-radius:9px;border:1px solid #d6e4ed;background:#f3f8fc;color:#173653;box-shadow:0 1px 5px #1b6e9c12}
+#erh-shared-dashboard-v1 .erh-dash-card:hover,#erh-shared-dashboard-v1 .erh-dash-card[aria-pressed="true"]{border-color:#1686d4;outline:1px solid #1686d4}
+#erh-shared-dashboard-v1 .erh-dash-card b{font-size:19px;font-weight:800;line-height:1.15}
+#erh-shared-dashboard-v1 .erh-dash-card span{font-size:11px;font-weight:700;line-height:1.2}
+#erh-shared-dashboard-v1 .erh-dash-card[data-status="notstarted"]{background:#f0f4f9}
+#erh-shared-dashboard-v1 .erh-dash-card[data-status="doing"]{background:#e9f5ff}
+#erh-shared-dashboard-v1 .erh-dash-card[data-status="overdue"]{background:#fff0ea;color:#a53d23}
+#erh-shared-dashboard-v1 .erh-dash-card[data-status="done"]{background:#e9f8ee;color:#137743}
+#erh-shared-dashboard-v1 .erh-dash-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 5px;font-size:11px;color:#60758b}
+#erh-shared-dashboard-v1 .erh-dash-meta button,#erh-shared-dashboard-v1 .erh-dash-details button{border:1px solid #b5d4ec;border-radius:6px;padding:4px 8px;background:white;color:#1769a3;cursor:pointer}
+#erh-shared-dashboard-v1 .erh-dash-details{display:none;background:white;border:1px solid #d6e4ed;border-radius:9px;padding:8px;margin-top:8px}
+#erh-shared-dashboard-v1 .erh-dash-details[aria-hidden="false"]{display:block}
+#erh-shared-dashboard-v1 .erh-dash-details-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin-bottom:6px}
+#erh-shared-dashboard-v1 .erh-dash-table-wrap{overflow-x:auto;max-height:330px;overflow-y:auto}
+#erh-shared-dashboard-v1 table{border-collapse:collapse;width:100%;min-width:620px;font-size:11px}
+#erh-shared-dashboard-v1 th,#erh-shared-dashboard-v1 td{padding:7px;border-bottom:1px solid #edf2f7;white-space:normal;vertical-align:top}
+#erh-shared-dashboard-v1 th{position:sticky;top:0;background:#eef6fc}
+#erh-shared-dashboard-v1 .erh-dash-error{color:#ac3b27}
+@media(max-width:780px){#erh-shared-dashboard-v1{margin:7px 8px 0}#erh-shared-dashboard-v1 .erh-dash-grid{gap:4px}#erh-shared-dashboard-v1 .erh-dash-card{min-height:68px;padding:6px 2px}#erh-shared-dashboard-v1 .erh-dash-card span{font-size:9px}#erh-shared-dashboard-v1 .erh-dash-card b{font-size:18px}}
+</style>
+<script id="ERH_DASHBOARD_UNIFIED_SCRIPT_V1_20261109">
+(function(){'use strict';
+ // All counts come from existing READ-ONLY server routes, authorized for the current login.
+ // The four buckets are mutually exclusive; cancelled tasks are excluded.
+ var buttons=[['notstarted','Chưa thực hiện'],['doing','Đang thực hiện'],['overdue','Quá hạn'],['done','Đã hoàn thành']];
+ var host=null, rows=[],counts=null,active='',tokenUsed='',lastSuccess=0,inflight=false;
+ function elem(tag,cls,txt){var x=document.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=txt;return x;}
+ function authToken(){try{return String(window.ERH_AUTH_token&&window.ERH_AUTH_token()||'');}catch(_){return '';}}
+ function moduleVisible(){return /^(GV|BC33)$/.test(document.body.getAttribute('data-erh-d15-module')||'');}
+ function clean(x){return String(x===null||x===undefined?'':x).trim();}
+ function key(x){return clean(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[_-]/g,' ').replace(/\s+/g,' ');}
+ function dateValue(x){
+   if(x instanceof Date)return isNaN(x.getTime())?null:new Date(x.getFullYear(),x.getMonth(),x.getDate());
+   var s=clean(x),m;if(!s)return null;
+   if((m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/)))return new Date(+m[3],+m[2]-1,+m[1]);
+   if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/)))return new Date(+m[1],+m[2]-1,+m[3]);
+   return null;
+ }
+ function statusOf(task,reported){
+   var state=key(task.status);
+   if(/^(HUY|DA HUY|CANCEL|CANCELLED|CANCELED)$/.test(state))return null;
+   if(/^(HOAN THANH|DA HOAN THANH|DA DONG|CLOSED|COMPLETED)$/.test(state))return 'done';
+   var due=dateValue(task.dueDate||task.due),now=new Date();now.setHours(0,0,0,0);
+   if(due&&due<now)return 'overdue';
+   var progress=!!reported||/DANG THUC HIEN|DA THUC HIEN|IN PROGRESS|DOING|PARTIAL/.test(state);
+   return progress?'doing':'notstarted';
+ }
+ function renderCounts(){if(!host)return;buttons.forEach(function(pair){var el=host.querySelector('[data-status="'+pair[0]+'"] b');if(el)el.textContent=counts?String(counts[pair[0]]):'—';});}
+ function details(){if(!host)return;var sec=host.querySelector('.erh-dash-details');if(!sec)return;
+   if(!active){sec.setAttribute('aria-hidden','true');return;}
+   sec.setAttribute('aria-hidden','false');sec.querySelector('.erh-dash-detail-title').textContent=buttons.find(function(b){return b[0]===active;})[1]+' ('+(counts?counts[active]:'—')+')';
+   var tbody=sec.querySelector('tbody');tbody.replaceChildren();
+   var filtered=rows.filter(function(r){return r.bucket===active;});
+   if(!counts){var tr=elem('tr');var td=elem('td','', 'Chưa có dữ liệu xác thực. Chọn “Làm mới” để thử lại.');td.colSpan=6;tr.appendChild(td);tbody.appendChild(tr);return;}
+   if(!filtered.length){var tr=elem('tr');var td=elem('td','', 'Không có công việc thuộc nhóm này.');td.colSpan=6;tr.appendChild(td);tbody.appendChild(tr);return;}
+   filtered.forEach(function(r,i){var t=r.task,tr=elem('tr'),vals=[String(i+1),clean(t.name||t.title),clean(t.project),clean(t.assignee),clean(t.dueDate||t.due),clean(t.status)];vals.forEach(function(v){tr.appendChild(elem('td','',v||'—'));});tbody.appendChild(tr);});
+ }
+ function error(msg){if(!host)return;host.querySelector('.erh-dash-feedback').textContent=msg;host.querySelector('.erh-dash-feedback').classList.add('erh-dash-error');}
+ function info(msg){if(!host)return;host.querySelector('.erh-dash-feedback').textContent=msg;host.querySelector('.erh-dash-feedback').classList.remove('erh-dash-error');}
+ function reset(){rows=[];counts=null;lastSuccess=0;renderCounts();details();}
+ function consume(payload,token){
+   var rr=payload&&payload.results;if(!payload||payload.ok!==true||!Array.isArray(rr))throw Error('Phản hồi dữ liệu không hợp lệ');
+   var one=rr.find(function(x){return x.id==='901';}),two=rr.find(function(x){return x.id==='902';});
+   if(!one||!two||!one.ok||!two.ok)throw Error(clean((one&&!one.ok&&one.error)||(two&&!two.ok&&two.error))||'Thiếu dữ liệu đọc');
+   var boot=one.result,completed=two.result;
+   if(!boot||boot.ok!==true||!Array.isArray(boot.tasks)||!completed||completed.ok!==true||!Array.isArray(completed.reportedLines))throw Error('Nguồn công việc/BC33 chưa đầy đủ');
+   var performed=Object.create(null);
+   completed.reportedLines.forEach(function(l){if(l&&l.taskId&&(Number(l.qty)>0||Number(l.minutes)>0))performed[clean(l.taskId)]=true;});
+   var seen=Object.create(null),next=[],sum={notstarted:0,doing:0,overdue:0,done:0};
+   boot.tasks.forEach(function(t){var id=clean(t.id||t.taskId);if(!id||seen[id])throw Error('Trùng hoặc thiếu mã giao việc');seen[id]=true;
+     var bucket=statusOf(t,performed[id]);if(bucket){sum[bucket]++;next.push({task:t,bucket:bucket});}
+   });
+   if(authToken()!==token)throw Error('Phiên đăng nhập đã thay đổi');
+   rows=next;counts=sum;lastSuccess=Date.now();renderCounts();details();info('Thống kê theo phiếu giao việc được phép xem · '+next.length+' phiếu · Cập nhật '+new Date().toLocaleTimeString('vi-VN'));
+ }
+ function refresh(force){if(!moduleVisible()||inflight)return;var token=authToken();if(!token){reset();return;}
+   if(tokenUsed!==token){tokenUsed=token;reset();}
+   if(!force&&counts&&Date.now()-lastSuccess<90000)return;
+   if(!window.google||!google.script||!google.script.run){error('Chưa có kết nối dữ liệu máy chủ.');return;}
+   inflight=true;info('Đang tải thống kê…');
+   var jobs=[{id:'901',method:'ERH_BC33_boot',args:[]},{id:'902',method:'ERH_BC33_getCompleted',args:[]}];
+   try{google.script.run.withSuccessHandler(function(result){inflight=false;try{consume(result,token);}catch(e){reset();error('Không thể xác minh thống kê: '+clean(e.message||e));}})
+     .withFailureHandler(function(e){inflight=false;reset();error('Không tải được thống kê: '+clean(e&&e.message||e));})
+     .ERH_T4_BC33_originalBatch(jobs,token);
+   }catch(e){inflight=false;reset();error('Lỗi kết nối thống kê: '+clean(e.message||e));}
+ }
+ function ensure(){if(host||!document.body)return;
+   var content=document.getElementById('content');if(!content||!content.parentNode)return;
+   host=elem('section');host.id='erh-shared-dashboard-v1';host.setAttribute('aria-label','Dashboard công việc GV BC33');
+   var meta=elem('div','erh-dash-meta'),feedback=elem('span','erh-dash-feedback','Thống kê công việc GV / BC33');
+   var reload=elem('button','', '↻ Làm mới');reload.type='button';reload.onclick=function(){refresh(true);};meta.append(feedback,reload);host.appendChild(meta);
+   var grid=elem('div','erh-dash-grid');buttons.forEach(function(pair){var button=elem('button','erh-dash-card');button.type='button';button.setAttribute('data-status',pair[0]);button.setAttribute('aria-pressed','false');button.append(elem('span','',pair[1]),elem('b','','—'));button.onclick=function(){active=active===pair[0]?'':pair[0];grid.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===button&&!!active));});details();};grid.appendChild(button);});host.appendChild(grid);
+   var section=elem('div','erh-dash-details');section.setAttribute('aria-hidden','true');var heading=elem('div','erh-dash-details-head');heading.appendChild(elem('strong','erh-dash-detail-title','Chi tiết'));
+   var close=elem('button','', 'Đóng bảng');close.type='button';close.onclick=function(){active='';grid.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed','false');});details();};heading.appendChild(close);section.appendChild(heading);
+   var wrap=elem('div','erh-dash-table-wrap'),table=elem('table'),thead=elem('thead'),tr=elem('tr');['STT','Công việc','Dự án','Người phụ trách','Hạn hoàn thành','Tình trạng gốc'].forEach(function(n){tr.appendChild(elem('th','',n));});thead.appendChild(tr);table.appendChild(thead);table.appendChild(elem('tbody'));wrap.appendChild(table);section.appendChild(wrap);host.appendChild(section);
+   content.parentNode.insertBefore(host,content);
+ }
+ function visibleCheck(){ensure();if(!host)return;
+   if(moduleVisible()){if(tokenUsed!==authToken())reset();refresh(false);}
+   else {active='';host.querySelectorAll('.erh-dash-card').forEach(function(x){x.setAttribute('aria-pressed','false');});details();}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){visibleCheck();new MutationObserver(visibleCheck).observe(document.body,{attributes:true,attributeFilter:['data-erh-d15-module']});});
+ else {visibleCheck();new MutationObserver(visibleCheck).observe(document.body,{attributes:true,attributeFilter:['data-erh-d15-module']});}
+ window.ERH_DASHBOARD_GVBC33_refresh=function(){refresh(true);};
+})();
+</script>
 </body>
 </html>
 
