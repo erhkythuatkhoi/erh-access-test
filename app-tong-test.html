@@ -223,6 +223,28 @@ body[data-erh-d15-module] .top .user{padding-top:5px;padding-bottom:5px}
   display: none !important;
 }
 </style>
+
+<!-- ERH_HOST_VIEWPORT_SCROLL_ISOLATION_20261109: host viewport only; iframe code & business APIs unchanged -->
+<style id="erh-host-viewport-scroll-isolation-20261109">
+/* Run only on authenticated GV / BC33 / BM01 module screens. No login or normal Dashboard effect. */
+html:has(body[data-erh-d15-module="GV"]),
+html:has(body[data-erh-d15-module="BC33"]),
+html:has(body[data-erh-d15-module="BCN"]){height:100%!important;overflow:hidden!important}
+body[data-erh-d15-module="GV"],body[data-erh-d15-module="BC33"],body[data-erh-d15-module="BCN"]{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+body[data-erh-d15-module]>.app{height:100dvh!important;min-height:0!important;overflow:hidden!important;align-items:stretch!important}
+body[data-erh-d15-module]>.app>.side{height:100%!important;min-height:0!important;overflow-y:auto!important;position:relative!important;top:auto!important}
+body[data-erh-d15-module]>.app>.main{height:100%!important;min-height:0!important;min-width:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+body[data-erh-d15-module]>.app>.main>.top{position:relative!important;top:0!important;flex:0 0 auto!important}
+body[data-erh-d15-module] #erh-dash6{flex:0 0 auto!important;position:relative!important;top:0!important;z-index:8!important}
+body[data-erh-d15-module] #content{flex:1 1 auto!important;display:flex!important;flex-direction:column!important;min-height:0!important;height:auto!important;overflow:hidden!important;overscroll-behavior:contain!important}
+body[data-erh-d15-module] #content>.erh-bc33-original-v17,
+body[data-erh-d15-module] #content>.gv-original-frame-host{flex:1 1 auto!important;display:flex!important;flex-direction:column!important;min-height:0!important;max-height:100%!important;height:100%!important;overflow:hidden!important}
+body[data-erh-d15-module="BCN"] #content>iframe[data-erh-d15-module="BCN"],
+body[data-erh-d15-module="BC33"] #content .erh-bc33-original-v17>iframe[data-erh-d15-module="BC33"],
+body[data-erh-d15-module="GV"] #content .gv-original-frame-host>iframe[data-erh-d15-module="GV"]{flex:1 1 auto!important;min-height:0!important;height:100%!important;max-height:100%!important;display:block!important;overflow:auto!important;border:0!important}
+/* On non-module pages, including login, do not change the original scrolling model. */
+@media(max-width:780px){body[data-erh-d15-module] #content{padding:5px!important}}
+</style>
 </head>
 <body>
 <div id="erh-test-connection-footer" style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#fff1d6;color:#563600;padding:5px;text-align:center;font:12px sans-serif">App Tổng Pages TEST P2F.10.20 — kết nối đăng nhập; API nghiệp vụ chưa mở</div>
@@ -2552,6 +2574,31 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
  function start(){init();new MutationObserver(routeChanged).observe(document.body,{attributes:true,attributeFilter:['data-erh-d15-module']});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
  window.ERH_DASH6_refresh=function(){refresh(true)};
+})();
+</script>
+
+<script id="erh-orphan-doc-guard-20261109">
+(function(){'use strict';
+  var scheduled=false;
+  function removeOrphanDocument(){
+    scheduled=false;
+    var app=document.querySelector('body > .app');
+    if(!app)return;
+    var n=app.nextSibling;
+    while(n){
+      var next=n.nextSibling;
+      if(n.nodeType===3 && /(?:\\n[ \t]*){3,}/.test(n.nodeValue||'')){
+        n.remove();
+      }else if(n.nodeType===1 && /^(HEADER|MAIN)$/i.test(n.tagName)){
+        var sample=(n.textContent||'').slice(0,2000);
+        if(/M&E OPS|Ứng dụng Giao việc KT Khối|ĐĂNG NHẬP M&E OPS/.test(sample))n.remove();
+      }
+      n=next;
+    }
+  }
+  function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(removeOrphanDocument)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){removeOrphanDocument();new MutationObserver(schedule).observe(document.body,{childList:true})},{once:true});
+  else{removeOrphanDocument();new MutationObserver(schedule).observe(document.body,{childList:true})}
 })();
 </script>
 </body>
