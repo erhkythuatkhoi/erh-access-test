@@ -1445,7 +1445,7 @@ html:has(#tab-completed.active) body{
    The unfinished-list status filter remains controlled by the Dashboard. */
 #tab-tasks .bc33d10-filter-status{display:none!important}
 #tab-tasks .bc33d10-filters label:has([data-d10-filter="status"]){display:none!important}
-#tab-completed .bc33d10-filters label:has([data-d12-filter="status"]){display:block!important;min-width:0!important}
+#tab-completed .bc33d10-filters label:has([data-d12-filter="status"]){display:flex!important}
 #tab-completed .bc33d10-filters,#tab-tasks .bc33d10-filters{position:sticky!important;top:0;z-index:5;background:#fff}
 </style><script id="erh-dash6-bc33-bridge">(function(){'use strict';
 var selected='',ids=null,frame=0,watcher=null,latestSignature='';
@@ -2485,12 +2485,9 @@ window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'u
   var viewButtons=list.querySelectorAll('button[data-viewunfinished]');
   viewButtons.forEach(function(view){
     var id=savedId(view);if(!id||view.nextElementSibling?.classList.contains('erh-gv-dashboard-cancel'))return;
-    // Check THIS task only. The old code checked the whole #taskList and
-    // suppressed cancellation controls for every other assigned task.
-    var existing=list.querySelectorAll('.erh-gvc72-card-action,[data-gvc72-task]');
-    for(var k=0;k<existing.length;k++){
-      if(String(existing[k].getAttribute('data-gvc72-task')||'')===id)return;
-    }
+    // Do not duplicate a native cancellation control on this task's own card.
+    var container=view.parentElement;
+    if(container&&container.querySelector('.erh-gvc72-card-action,[data-gvc72-task="'+id+'"]'))return;
     var cancel=document.createElement('button');cancel.type='button';cancel.className='erh-gv-dashboard-cancel';
     cancel.textContent='Hủy phiếu đã giao';
     cancel.setAttribute('aria-label','Kiểm tra quyền hủy giao việc '+id);
@@ -2514,24 +2511,16 @@ window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'u
  }
  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
  function route(action,taskIds){
-  // Use the exact existing GV tab controller; do not route to BC33.
-  if(typeof APP==='undefined'||!APP||typeof APP.openTab!=='function')return false;
-  if(action==='assign'){selection='assign';currentIds=null;APP.openTab('assign');return true;}
+  if(!window.APP||typeof APP.openTab!=='function')return;
+  if(action==='assign'){selection='assign';currentIds=null;APP.openTab('assign');return;}
   selection=action;
   currentIds=Array.isArray(taskIds)?new Set(taskIds.map(String)):null;
   APP.openTab(action==='done'?'completed':'tasks');schedule();
-  // GV list reads are asynchronous; render filters again once list data arrives.
-  setTimeout(schedule,150);setTimeout(schedule,750);
-  return true;
  }
  window.addEventListener('message',function(e){
   if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;
   if(!['assign','notstarted','doing','overdue','done','priority'].includes(e.data.action))return;
-  var ok=false;
-  try{ok=route(e.data.action,e.data.taskIds);}catch(err){
-    parent.postMessage({type:'ERH_DASH6_GV_ACK',requestId:e.data.requestId||0,ok:false,error:String(err&&err.message||err)},'*');return;
-  }
-  parent.postMessage({type:'ERH_DASH6_GV_ACK',requestId:e.data.requestId||0,ok:ok,error:ok?'':'GV chưa khởi tạo xong'},'*');
+  route(e.data.action,e.data.taskIds);
  });
  var target=document.getElementById('tab-tasks')||document.body;
  new MutationObserver(schedule).observe(target,{childList:true,subtree:true});
@@ -2587,30 +2576,11 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!node){note('Không tìm thấy menu '+page);return false;}
   node.click();return true;
  }
- var gvRequestId=0,gvPending=null,gvRetryTimer=null;
  function gvCommand(action){
   var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
-  if(moduleName()!=='GV')return false;
-  var req={type:'ERH_DASH6_GV_VIEW',action:action,taskIds:groups&&groups[action]||null,requestId:++gvRequestId};
-  gvPending=req;
-  if(gvRetryTimer){clearTimeout(gvRetryTimer);gvRetryTimer=null;}
-  var attempts=0;
-  function deliver(){
-   if(gvPending!==req||moduleName()!=='GV')return;
-   f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
-   if(f&&f.contentWindow)f.contentWindow.postMessage(req,'*');
-   if(++attempts<8)gvRetryTimer=setTimeout(deliver,attempts<4?300:650);
-   else {gvPending=null;note('Giao việc chưa mở danh sách. Hãy thử chọn lại nút.');}
-  }
-  deliver();return true;
+  if(f&&f.contentWindow){f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:action,taskIds:groups&&groups[action]||null},'*');return true;}
+  return false;
  }
- window.addEventListener('message',function(ev){
-  if(!gvPending||!ev.data||ev.data.type!=='ERH_DASH6_GV_ACK'||ev.data.requestId!==gvPending.requestId)return;
-  var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
-  if(!f||ev.source!==f.contentWindow)return;
-  if(ev.data.ok){gvPending=null;if(gvRetryTimer)clearTimeout(gvRetryTimer);gvRetryTimer=null;note('');}
-  else if(ev.data.error)note('Giao việc: '+ev.data.error);
- });
  function frame(){return document.querySelector('#content iframe[data-erh-d15-module="BC33"]')}
  function send(){if(!['notstarted','doing','overdue','done','priority','report'].includes(chosen)||moduleName()!=='BC33')return;
   var f=frame();if(!f||!f.contentWindow)return;
