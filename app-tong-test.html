@@ -1015,7 +1015,6 @@ window.ERH_T4_registerModule=function(id,adapter){
   if(!adapter||typeof adapter.mount!=='function')throw new Error('mount() required for '+id);
   ERH_T4_ADAPTERS[id]=adapter;
 };
-window.ERH_GV_STATS_GET_EXISTING_VIEW=function(){return ERH_T4_ADAPTERS.BC33||null};
 function ERH_T4_teardown(){
   if(!ERH_T4_ACTIVE)return;
   if(ERH_P3B_park(ERH_T4_ACTIVE)){
@@ -1071,7 +1070,6 @@ function ERH_T4_tryMount(page){
 
 function go(page){
   const perf07Same=state.page===page;
-  if(page!=='wo'&&typeof window.ERH_GV_STATS_BEFORE_ROUTE==='function')window.ERH_GV_STATS_BEFORE_ROUTE();
   ERH_T4_teardown();
   state.page=page;
   window.ERH_D15_TOP?.activate(page);
@@ -1650,7 +1648,7 @@ function mount(root,ctx){
   if(!painted){if(queue.length<40)queue.push(req);return;}run(req);
  }
  function cleanup(){stopListViewportD13();clearSendingD8();alive=false;queue.length=0;readQueue.length=0;clearTimeout(readTimer);readTimer=null;clearTimeout(readFlightTimer);readFlightTimer=null;pending.forEach(function(done){done(false,null,'Đã đóng giao diện.');});pending.clear();window.removeEventListener('message',listener);}
- active={host,frame,listener,cleanup};window.addEventListener('message',listener);host.appendChild(notice);host.appendChild(frame);root.appendChild(host);frame.srcdoc=DOC.replace(/<\/head>/i,'<style id="erh-two-module-nav-hide-bc33">nav.tabs{display:none!important}</style></head>').replace(/<\/body>/i,ERH_BC33_DASH6_BRIDGE+(window.ERH_GV_STATS_EMBED_ACTIVE?(window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT||''):'')+'</body>');return {unmount};
+ active={host,frame,listener,cleanup};window.addEventListener('message',listener);host.appendChild(notice);host.appendChild(frame);root.appendChild(host);frame.srcdoc=DOC.replace(/<\/head>/i,'<style id="erh-two-module-nav-hide-bc33">nav.tabs{display:none!important}</style></head>').replace(/<\/body>/i,ERH_BC33_DASH6_BRIDGE+'</body>');return {unmount};
 }
 window.ERH_T4_registerModule('BC33',{mount,unmount});
 
@@ -1923,7 +1921,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       try{const saved=localStorage.getItem(draftStorageKey);if(saved&&saved.length<=250000&&JSON.parse(saved)&&typeof JSON.parse(saved)==='object')draftBoot.ERH_GIAO_VIEC_DRAFT_V4=saved;}catch(e){}
       const safeDraft=JSON.stringify(draftBoot).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
       let iframeHtml=ORIGINAL_DOC.replace('__ACTOR__',safeActor).replace('__ERH_T4_GV_DRAFT_BOOT__',safeDraft);
-      iframeHtml=iframeHtml.replace('</head>',cleanCss+'</head>').replace(/<\/body>/i,sizeTag+(window.ERH_GVC7_FRAME_SCRIPT||'')+(window.ERH_DASH6_GV_BRIDGE||'')+'</body>');
+      iframeHtml=iframeHtml.replace('</head>',cleanCss+'</head>').replace('</body>',sizeTag+(window.ERH_GVC7_FRAME_SCRIPT||'')+(window.ERH_DASH6_GV_BRIDGE||'')+'</body>');
          if(instance.cancelled||current!==instance||!frame.isConnected)return;
          p3log.srcdocMs=Math.round(performance.now()-p3t0);
          p3log.phase='srcdoc-assigned';
@@ -2412,6 +2410,8 @@ var base64='KGZ1bmN0aW9uKCl7J3VzZSBzdHJpY3QnOwovLyBBRERJVElWRTogbmV2ZXIgaW50ZXJj
 window.ERH_GVC7_FRAME_SCRIPT='<script>'+new TextDecoder('utf-8').decode(Uint8Array.from(atob(base64),function(c){return c.charCodeAt(0);}))+'</'+'script>';
 // ERH-GVC7.1-EDIT-CANCEL-ADDON: only saved task edit mode.
 window.ERH_GVC7_FRAME_SCRIPT += '<script>'+new TextDecoder('utf-8').decode(Uint8Array.from(atob('KGZ1bmN0aW9uKCl7J3VzZSBzdHJpY3QnOwovLyBWNy4xIGFkZGl0aXZlIG9ubHkuIEV4aXN0aW5nIEdWIHNhdmUsIGRyYWZ0LCBmb3JtLWNhbmNlbCBoYW5kbGVycyByZW1haW4gdW50b3VjaGVkLgpjb25zdCBJRD0vXkdWLVtBLVowLTktXXs4LDk1fSQvaTsKZnVuY3Rpb24gY3VycmVudElkKCl7CiBjb25zdCB4PXdpbmRvdy5HSUFPVklFQ19WNTsKIGNvbnN0IGlkPVN0cmluZyh4JiZ4LmVkaXRpbmdUYXNrSWR8fCcnKS50cmltKCk7CiByZXR1cm4gSUQudGVzdChpZCk/aWQ6Jyc7Cn0KZnVuY3Rpb24gdmlzaWJsZShlbCl7cmV0dXJuICEhKGVsJiZlbC5pc0Nvbm5lY3RlZCYmZWwuZ2V0Q2xpZW50UmVjdHMoKS5sZW5ndGgpO30KZnVuY3Rpb24gbG9jYXRlRm9vdGVyKCl7CiBjb25zdCB0YWI9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RhYi1hc3NpZ24nKTsKIGlmKCF0YWJ8fCF2aXNpYmxlKHRhYikpcmV0dXJuIG51bGw7CiBjb25zdCBidXR0b25zPUFycmF5LmZyb20odGFiLnF1ZXJ5U2VsZWN0b3JBbGwoJ2J1dHRvbicpKTsKIGNvbnN0IGNsb3Nlcz1idXR0b25zLmZpbHRlcihiPT52aXNpYmxlKGIpJiYvXijEkcOzbmd8ZG9uZykkL2kudGVzdChTdHJpbmcoYi50ZXh0Q29udGVudHx8JycpLnRyaW0oKSkpOwogaWYoY2xvc2VzLmxlbmd0aClyZXR1cm4gY2xvc2VzW2Nsb3Nlcy5sZW5ndGgtMV07CiBjb25zdCBmb290PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdndjgtYnV0dG9ucycpOwogcmV0dXJuIGZvb3QmJnZpc2libGUoZm9vdCk/Zm9vdDpudWxsOwp9CmZ1bmN0aW9uIHN5bmMoKXsKIGNvbnN0IGlkPWN1cnJlbnRJZCgpOwogbGV0IGJ0bj1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZXJoR3ZjNzFFZGl0Q2FuY2VsJyk7CiBpZighaWQpe2lmKGJ0bilidG4ucmVtb3ZlKCk7cmV0dXJuO30KIGNvbnN0IGFuY2hvcj1sb2NhdGVGb290ZXIoKTsKIGlmKCFhbmNob3Ipe2lmKGJ0bilidG4ucmVtb3ZlKCk7cmV0dXJuO30KIGlmKCFidG4pewogICBidG49ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnYnV0dG9uJyk7YnRuLmlkPSdlcmhHdmM3MUVkaXRDYW5jZWwnO2J0bi50eXBlPSdidXR0b24nOwogICBidG4udGV4dENvbnRlbnQ9J0jhu6d5IHBoaeG6v3UgxJHDoyBnaWFvJzsKICAgYnRuLnN0eWxlLmNzc1RleHQ9J21hcmdpbjo2cHggOHB4O3BhZGRpbmc6OXB4IDEzcHg7Ym9yZGVyLXJhZGl1czo3cHg7YmFja2dyb3VuZDojZmZmNWYyO2NvbG9yOiM5YTI5MWE7Ym9yZGVyOjFweCBzb2xpZCAjZTVhMzlkO2ZvbnQ6NjAwIDEzcHggQXJpYWwsc2Fucy1zZXJpZjtjdXJzb3I6cG9pbnRlcic7CiAgIGJ0bi50aXRsZT0nQ2jhu4kga2nhu4NtIHRyYSDEkWnhu4F1IGtp4buHbiBo4buneSBwaGnhur91IMSRw6MgbMawdTsga2jDtG5nIHjDs2EgaG/hurdjIGjhu6d5IG7hu5lpIGR1bmcgxJFhbmcgbmjhuq1wJzsKICAgYnRuLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJyxmdW5jdGlvbihldil7CiAgICAgZXYucHJldmVudERlZmF1bHQoKTtldi5zdG9wUHJvcGFnYXRpb24oKTsKICAgICBjb25zdCB0YXNrSWQ9Y3VycmVudElkKCk7CiAgICAgaWYoIXRhc2tJZCl7c3luYygpO3JldHVybjt9CiAgICAgcGFyZW50LnBvc3RNZXNzYWdlKHt0eXBlOidFUkhfR1ZDN19PUEVOX0NBTkNFTCcsdGFza0lkOnRhc2tJZH0sJyonKTsKICAgfSk7CiB9CiBpZihhbmNob3IuaWQ9PT0nZ3Y4LWJ1dHRvbnMnKXsKICAgaWYoYnRuLnBhcmVudEVsZW1lbnQhPT1hbmNob3IpYW5jaG9yLmFwcGVuZENoaWxkKGJ0bik7CiB9ZWxzZSBpZihidG4ucHJldmlvdXNFbGVtZW50U2libGluZyE9PWFuY2hvcnx8YnRuLnBhcmVudEVsZW1lbnQhPT1hbmNob3IucGFyZW50RWxlbWVudCl7CiAgIGFuY2hvci5pbnNlcnRBZGphY2VudEVsZW1lbnQoJ2FmdGVyZW5kJyxidG4pOwogfQp9CmxldCBzY2hlZHVsZWQ9ZmFsc2U7CmZ1bmN0aW9uIHNjaGVkdWxlKCl7aWYoc2NoZWR1bGVkKXJldHVybjtzY2hlZHVsZWQ9dHJ1ZTtxdWV1ZU1pY3JvdGFzayhmdW5jdGlvbigpe3NjaGVkdWxlZD1mYWxzZTtzeW5jKCk7fSk7fQpuZXcgTXV0YXRpb25PYnNlcnZlcihzY2hlZHVsZSkub2JzZXJ2ZShkb2N1bWVudC5kb2N1bWVudEVsZW1lbnQse2NoaWxkTGlzdDp0cnVlLHN1YnRyZWU6dHJ1ZX0pOwpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsZnVuY3Rpb24oKXtzZXRUaW1lb3V0KHN5bmMsMCk7fSx0cnVlKTsKaWYoZG9jdW1lbnQucmVhZHlTdGF0ZT09PSdsb2FkaW5nJylkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJyxzeW5jKTtlbHNlIHN5bmMoKTsKfSkoKTsK'),function(c){return c.charCodeAt(0);}))+'</'+'script>';
+// ERH-GVC7.2-CARD-CANCEL-ADDON: visible on saved GV cards, no edit mode needed.
+window.ERH_GVC7_FRAME_SCRIPT += '<script>'+new TextDecoder('utf-8').decode(Uint8Array.from(atob('KGZ1bmN0aW9uKCl7J3VzZSBzdHJpY3QnOwovLyBWNy4yOiBzYXZlZCBHViBjYXJkcyBvbmx5LiBEb2VzIG5vdCBhbHRlciBleGlzdGluZyBjcmVhdGUvZWRpdC9zYXZlL2NhbmNlbCBoYW5kbGVycy4KY29uc3QgVkFMSUQ9L15HVi1bQS1aMC05LV17OCw5NX0kL2k7CmNvbnN0IExJU1Q9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3Rhc2tMaXN0Jyk7CmZ1bmN0aW9uIGlkRnJvbUNhcmQoY2FyZCl7CiAgaWYoY2FyZC5tYXRjaGVzKCdidXR0b25bZGF0YS12aWV3dW5maW5pc2hlZF0nKSl7CiAgICBjb25zdCBpZD1TdHJpbmcoY2FyZC5nZXRBdHRyaWJ1dGUoJ2RhdGEtdmlld3VuZmluaXNoZWQnKXx8JycpLnRyaW0oKTsKICAgIHJldHVybiBWQUxJRC50ZXN0KGlkKT9pZDonJzsKICB9CiAgY29uc3QgYmFkZ2VzPWNhcmQucXVlcnlTZWxlY3RvckFsbCgnLmJhZGdlJyk7CiAgZm9yKGNvbnN0IGJhZGdlIG9mIGJhZGdlcyl7Y29uc3QgaWQ9U3RyaW5nKGJhZGdlLnRleHRDb250ZW50fHwnJykudHJpbSgpO2lmKFZBTElELnRlc3QoaWQpKXJldHVybiBpZDt9CiAgcmV0dXJuICcnOwp9CmZ1bmN0aW9uIG9wZW4oaWQpewogIGlmKCFWQUxJRC50ZXN0KGlkKSlyZXR1cm47CiAgcGFyZW50LnBvc3RNZXNzYWdlKHt0eXBlOidFUkhfR1ZDN19PUEVOX0NBTkNFTCcsdGFza0lkOmlkfSwnKicpOwp9CmZ1bmN0aW9uIGJ1dHRvbkZvcihjYXJkLGlkKXsKICBjb25zdCBidXR0b249ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnYnV0dG9uJyk7CiAgYnV0dG9uLnR5cGU9J2J1dHRvbic7YnV0dG9uLnRleHRDb250ZW50PSdI4buneSBwaGnhur91IMSRw6MgZ2lhbyc7CiAgYnV0dG9uLmNsYXNzTmFtZT0nZXJoLWd2YzcyLWNhcmQtYWN0aW9uJztidXR0b24uZGF0YXNldC5ndmM3MlRhc2s9aWQ7CiAgYnV0dG9uLnNldEF0dHJpYnV0ZSgnYXJpYS1sYWJlbCcsJ0tp4buDbSB0cmEgaOG7p3kgcGhp4bq/dSDEkcOjIGdpYW8gJytpZCk7CiAgYnV0dG9uLnN0eWxlLmNzc1RleHQ9J2Rpc3BsYXk6aW5saW5lLWJsb2NrO21hcmdpbjo5cHggMCAzcHggMDtwYWRkaW5nOjlweCAxM3B4O2JvcmRlcjoxcHggc29saWQgI2Q1OWM5MTtib3JkZXItcmFkaXVzOjdweDtiYWNrZ3JvdW5kOiNmZmY0ZWY7Y29sb3I6IzkzMzMyNTtmb250OjYwMCAxM3B4IEFyaWFsLHNhbnMtc2VyaWY7Y3Vyc29yOnBvaW50ZXI7bWF4LXdpZHRoOjEwMCU7d2hpdGUtc3BhY2U6bm9ybWFsOyc7CiAgYnV0dG9uLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJyxmdW5jdGlvbihldil7ZXYucHJldmVudERlZmF1bHQoKTtldi5zdG9wSW1tZWRpYXRlUHJvcGFnYXRpb24oKTtldi5zdG9wUHJvcGFnYXRpb24oKTtvcGVuKGlkKTt9KTsKICByZXR1cm4gYnV0dG9uOwp9CmZ1bmN0aW9uIHN5bmMoKXsKICBjb25zdCBsaXN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YXNrTGlzdCcpOwogIGlmKCFsaXN0KXJldHVybjsKICBjb25zdCBjYXJkcz1saXN0LnF1ZXJ5U2VsZWN0b3JBbGwoJ2Rpdi50YXNrLGJ1dHRvbltkYXRhLXZpZXd1bmZpbmlzaGVkXScpOwogIGNhcmRzLmZvckVhY2goZnVuY3Rpb24oY2FyZCl7CiAgICBjb25zdCBpZD1pZEZyb21DYXJkKGNhcmQpOwogICAgaWYoIWlkKXJldHVybjsKICAgIGlmKGNhcmQubWF0Y2hlcygnYnV0dG9uJykpewogICAgICBjb25zdCBuZXh0PWNhcmQubmV4dEVsZW1lbnRTaWJsaW5nOwogICAgICBpZihuZXh0JiZuZXh0LmNsYXNzTGlzdC5jb250YWlucygnZXJoLWd2YzcyLWNhcmQtYWN0aW9uJykmJm5leHQuZGF0YXNldC5ndmM3MlRhc2s9PT1pZClyZXR1cm47CiAgICAgIGlmKG5leHQmJm5leHQuY2xhc3NMaXN0LmNvbnRhaW5zKCdlcmgtZ3ZjNzItY2FyZC1hY3Rpb24nKSluZXh0LnJlbW92ZSgpOwogICAgICBjYXJkLmluc2VydEFkamFjZW50RWxlbWVudCgnYWZ0ZXJlbmQnLGJ1dHRvbkZvcihjYXJkLGlkKSk7CiAgICB9ZWxzZXsKICAgICAgbGV0IG9sZD1jYXJkLnF1ZXJ5U2VsZWN0b3IoJzpzY29wZSA+IC5lcmgtZ3ZjNzItY2FyZC1hY3Rpb24nKTsKICAgICAgaWYob2xkJiZvbGQuZGF0YXNldC5ndmM3MlRhc2s9PT1pZClyZXR1cm47CiAgICAgIGlmKG9sZClvbGQucmVtb3ZlKCk7CiAgICAgIGNhcmQuYXBwZW5kQ2hpbGQoYnV0dG9uRm9yKGNhcmQsaWQpKTsKICAgIH0KICB9KTsKfQpsZXQgcXVldWVkPWZhbHNlOwpmdW5jdGlvbiBzY2hlZHVsZSgpe2lmKHF1ZXVlZClyZXR1cm47cXVldWVkPXRydWU7c2V0VGltZW91dChmdW5jdGlvbigpe3F1ZXVlZD1mYWxzZTtzeW5jKCk7fSwwKTt9CmNvbnN0IG9ic2VydmVyPW5ldyBNdXRhdGlvbk9ic2VydmVyKHNjaGVkdWxlKTsKZnVuY3Rpb24gc3RhcnQoKXsKICBjb25zdCBsaXN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YXNrTGlzdCcpOwogIGlmKGxpc3Qpe29ic2VydmVyLm9ic2VydmUobGlzdCx7Y2hpbGRMaXN0OnRydWUsc3VidHJlZTp0cnVlfSk7c3luYygpO30KICBlbHNlIHNldFRpbWVvdXQoc3RhcnQsMzAwKTsKfQppZihkb2N1bWVudC5yZWFkeVN0YXRlPT09J2xvYWRpbmcnKWRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLHN0YXJ0KTtlbHNlIHN0YXJ0KCk7Cn0pKCk7Cg=='),function(c){return c.charCodeAt(0);}))+'</'+'script>';
 // ERH-GVC7.4-READONLY-CANCELLED-LIST: additive, does not affect BC33/BM01.
 window.ERH_GVC7_FRAME_SCRIPT += '<script>'+new TextDecoder('utf-8').decode(Uint8Array.from(atob('KGZ1bmN0aW9uKCl7J3VzZSBzdHJpY3QnOwovKiBFUkggR1ZDIFY3LjQ6IGV4dHJhIFJFQUQtT05MWSBjYW5jZWxlZCBHViB2aWV3LiBFeGlzdGluZyBHVi9CQzMzL0JNMDEgZGF0YSByb3V0ZXMgdW5jaGFuZ2VkLiAqLwpjb25zdCBST09UX0lEPSdlcmhHdmM3NENhbmNlbGxlZEhpc3RvcnknOwpjb25zdCBCVE5fSUQ9J2VyaEd2Yzc0T3BlbkNhbmNlbGxlZCc7CmNvbnN0IHZhbGlkPS9eR1YtW0EtWjAtOS1dezgsOTV9JC9pOwpjb25zdCBub3JtPXY9PlN0cmluZyh2PT1udWxsPycnOnYpLm5vcm1hbGl6ZSgnTkZEJykucmVwbGFjZSgvW1x1MDMwMC1cdTAzNmZdL2csJycpLnJlcGxhY2UoL8SRL2csJ2QnKS50cmltKCkudG9Mb3dlckNhc2UoKTsKY29uc3QgY2FuY2VsbGVkPXY9PlsnaHV5JywnZGEgaHV5JywnY2FuY2VsbGVkJywnY2FuY2VsZWQnXS5pbmNsdWRlcyhub3JtKHYpKTsKY29uc3QgZXNjPXY9PlN0cmluZyh2PT1udWxsPycnOnYpLnJlcGxhY2UoL1smPD4iJ10vZyxjPT4oeycmJzonJmFtcDsnLCc8JzonJmx0OycsJz4nOicmZ3Q7JywnIic6JyZxdW90OycsIiciOicmIzM5Oyd9W2NdKSk7CmxldCBidXN5PWZhbHNlLGxhc3RUb2tlbj0nJyxsYXN0TG9hZGVkPTAsbGFzdFJvd3M9W10sbGFzdEVycm9yPScnOwpmdW5jdGlvbiBhbmNob3IoKXtjb25zdCBsaXN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YXNrTGlzdCcpO3JldHVybiBsaXN0JiZsaXN0LnBhcmVudEVsZW1lbnQ/bGlzdDpudWxsO30KZnVuY3Rpb24gcGFuZWwoKXsKIGNvbnN0IGxpc3Q9YW5jaG9yKCk7aWYoIWxpc3QpcmV0dXJuIG51bGw7CiBsZXQgYnRuPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKEJUTl9JRCkscD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZChST09UX0lEKTsKIGlmKCFidG4pe2J0bj1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdidXR0b24nKTtidG4uaWQ9QlROX0lEO2J0bi50eXBlPSdidXR0b24nO2J0bi50ZXh0Q29udGVudD0nR2lhbyB2aeG7h2MgxJHDoyBo4buneSc7YnRuLnNldEF0dHJpYnV0ZSgnYXJpYS1leHBhbmRlZCcsJ2ZhbHNlJyk7CiBidG4uc3R5bGUuY3NzVGV4dD0nZGlzcGxheTpibG9jazttYXJnaW46MThweCAwIDhweCBhdXRvO3BhZGRpbmc6MTBweCAxOHB4O2JhY2tncm91bmQ6I2ZmZjRlZTtib3JkZXI6MXB4IHNvbGlkICNkNmE0OTk7Ym9yZGVyLXJhZGl1czo5cHg7Y29sb3I6Izk5M2MyYjtmb250OjcwMCAxM3B4IEFyaWFsO2N1cnNvcjpwb2ludGVyO2JveC1zaGFkb3c6MCAycHggNnB4ICM0ZTM4MjAxNSc7CiBidG4uYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLGZ1bmN0aW9uKCl7Y29uc3QgYm94PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKFJPT1RfSUQpO2lmKCFib3gpcmV0dXJuO2NvbnN0IG9wZW49Ym94LmhpZGRlbjtib3guaGlkZGVuPSFvcGVuO2J0bi5zZXRBdHRyaWJ1dGUoJ2FyaWEtZXhwYW5kZWQnLFN0cmluZyhvcGVuKSk7YnRuLnRleHRDb250ZW50PW9wZW4/J8SQw7NuZyBkYW5oIHPDoWNoIGdpYW8gdmnhu4djIMSRw6MgaOG7p3knOidHaWFvIHZp4buHYyDEkcOjIGjhu6d5JztpZihvcGVuKWxvYWQodHJ1ZSk7fSk7fQogaWYoYnRuLnByZXZpb3VzRWxlbWVudFNpYmxpbmchPT1saXN0KWxpc3QuaW5zZXJ0QWRqYWNlbnRFbGVtZW50KCdhZnRlcmVuZCcsYnRuKTsKIGlmKCFwKXtwPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ3NlY3Rpb24nKTtwLmlkPVJPT1RfSUQ7cC5zdHlsZS5jc3NUZXh0PSdtYXJnaW4tdG9wOjhweDtib3JkZXItdG9wOjFweCBzb2xpZCAjZTNlYWYxO3BhZGRpbmctdG9wOjEycHgnO3AuaGlkZGVuPXRydWU7fQogaWYocC5wcmV2aW91c0VsZW1lbnRTaWJsaW5nIT09YnRuKWJ0bi5pbnNlcnRBZGphY2VudEVsZW1lbnQoJ2FmdGVyZW5kJyxwKTsKIHJldHVybiBwOwp9CmZ1bmN0aW9uIHJlbmRlcigpe2NvbnN0IHA9cGFuZWwoKTtpZighcClyZXR1cm47CiBjb25zdCBjb250ZW50PWxhc3RFcnJvcj8nPHAgcm9sZT0iYWxlcnQiIHN0eWxlPSJjb2xvcjojYTEzNTM1Ij5LaMO0bmcgdOG6o2kgxJHGsOG7o2MgbMawdSB24bq/dCBwaGnhur91IGjhu6d5OiAnK2VzYyhsYXN0RXJyb3IpKyc8L3A+JzoKIGxhc3RSb3dzLmxlbmd0aD9sYXN0Um93cy5tYXAodD0+JzxhcnRpY2xlIHN0eWxlPSJtYXJnaW46OHB4IDA7cGFkZGluZzoxMnB4O2JvcmRlcjoxcHggc29saWQgI2RlYzNiZDtib3JkZXItcmFkaXVzOjlweDtiYWNrZ3JvdW5kOiNmZmZhZjgiPjxiPicrZXNjKHQudGFza3x8J0PDtG5nIHZp4buHYycpKyc8L2I+PGRpdiBzdHlsZT0ibWFyZ2luOjdweCAwO292ZXJmbG93LXdyYXA6YW55d2hlcmUiPjxzdHJvbmc+Jytlc2ModC50YXNrSWQpKyc8L3N0cm9uZz4gPHNwYW4gc3R5bGU9ImNvbG9yOiNhNDNmMmE7Zm9udC13ZWlnaHQ6NzAwIj7EkMOjIGjhu6d5PC9zcGFuPjwvZGl2PjxkaXYgc3R5bGU9ImZvbnQtc2l6ZToxM3B4O2NvbG9yOiM0NjU3NjYiPkThu7Egw6FuOiAnK2VzYyh0LnByb2plY3R8fCctJykrJyDCtyBHaWFvIGLhu59pOiAnK2VzYyh0LmFzc2lnbmVyfHwnLScpKycgwrcgSOG6oW46ICcrZXNjKHQuZHVlRGF0ZXx8Jy0nKSsnPC9kaXY+PGRpdiBzdHlsZT0iZm9udC1zaXplOjEycHg7Y29sb3I6IzY5Nzc4NDttYXJnaW4tdG9wOjZweCI+TmfGsOG7nWkgaOG7p3k6ICcrZXNjKHQuY2FuY2VsbGVkQnl8fCctJykrJyDCtyBUaOG7nWkgZ2lhbjogJytlc2ModC5jYW5jZWxsZWRBdHx8Jy0nKSsnPC9kaXY+PGRpdiBzdHlsZT0iZm9udC1zaXplOjEycHg7Y29sb3I6IzY5Nzc4NDttYXJnaW4tdG9wOjVweDt3aGl0ZS1zcGFjZTpwcmUtd3JhcCI+Jytlc2ModC5yZWFzb258fCdDaMawYSBjw7MgbMO9IGRvIGdoaSB0cm9uZyBuaOG6rXQga8O9JykrJzwvZGl2PjxkaXYgc3R5bGU9ImZvbnQtc2l6ZToxMnB4O2NvbG9yOiM2OTc3ODQ7bWFyZ2luLXRvcDo2cHgiPkzGsHUgduG6v3QgbOG7i2NoIHPhu60g4oCUIGtow7RuZyDEkcaw4bujYyBs4bqtcCBiw6FvIGPDoW8gQkMzMy9CTTAxPC9kaXY+PC9hcnRpY2xlPicpLmpvaW4oJycpOgogJzxwIHN0eWxlPSJjb2xvcjojNjI3NDg2O2ZvbnQtc2l6ZToxM3B4O21hcmdpbjo4cHggMCI+S2jDtG5nIGPDsyBwaGnhur91IMSRw6MgaOG7p3kgdGh14buZYyBkYW5oIHPDoWNoIGPDtG5nIHZp4buHYyBj4bunYSB0w6BpIGtob+G6o24uPC9wPic7CiBwLmlubmVySFRNTD0nPGg0IHN0eWxlPSJtYXJnaW46NHB4IDA7Zm9udC1zaXplOjE0cHgiPkdpYW8gdmnhu4djIMSRw6MgaOG7p3kg4oCUICcrbGFzdFJvd3MubGVuZ3RoKyc8L2g0PicrY29udGVudDsKfQpmdW5jdGlvbiB0b2tlbigpe3RyeXtyZXR1cm4gU3RyaW5nKGxvY2FsU3RvcmFnZS5nZXRJdGVtKEFQUC5zZXNzaW9uS2V5KXx8JycpO31jYXRjaChlKXtyZXR1cm4gJyc7fX0KbGV0IHJlcXVlc3RTZXE9MCxhY3RpdmVSZXF1ZXN0PTA7CmZ1bmN0aW9uIGxvYWQoZm9yY2Upe2NvbnN0IHQ9dG9rZW4oKSxuPURhdGUubm93KCk7aWYoIXR8fHQubGVuZ3RoPDE2fHxidXN5fHwhYW5jaG9yKCkpcmV0dXJuOwogaWYoIWZvcmNlJiZ0PT09bGFzdFRva2VuJiZuLWxhc3RMb2FkZWQ8MzAwMDApcmV0dXJuOwogbGFzdFRva2VuPXQ7bGFzdExvYWRlZD1uO2J1c3k9dHJ1ZTthY3RpdmVSZXF1ZXN0PSsrcmVxdWVzdFNlcTsKIHBhcmVudC5wb3N0TWVzc2FnZSh7dHlwZTonRVJIX0dWQzc1X0hJU1RPUllfUkVRVUVTVCcscmVxdWVzdElkOmFjdGl2ZVJlcXVlc3R9LCcqJyk7Cn0Kd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ21lc3NhZ2UnLGZ1bmN0aW9uKGUpewogaWYoZS5zb3VyY2UhPT1wYXJlbnR8fCFlLmRhdGF8fGUuZGF0YS50eXBlIT09J0VSSF9HVkM3NV9ISVNUT1JZX1JFU1BPTlNFJ3x8ZS5kYXRhLnJlcXVlc3RJZCE9PWFjdGl2ZVJlcXVlc3QpcmV0dXJuOwogYnVzeT1mYWxzZTtpZih0b2tlbigpIT09bGFzdFRva2VuKXJldHVybjsKIGlmKGUuZGF0YS5vayYmZS5kYXRhLnJlc3VsdCYmZS5kYXRhLnJlc3VsdC5vayl7bGFzdEVycm9yPScnO2xhc3RSb3dzPShBcnJheS5pc0FycmF5KGUuZGF0YS5yZXN1bHQudGFza3MpP2UuZGF0YS5yZXN1bHQudGFza3M6W10pLmZpbHRlcih2PT52JiZ2YWxpZC50ZXN0KHYudGFza0lkfHwnJykmJmNhbmNlbGxlZCh2LnN0YXR1cykpO30KIGVsc2V7bGFzdEVycm9yPVN0cmluZyhlLmRhdGEuZXJyb3J8fCdLaMO0bmcgdOG6o2kgxJHGsOG7o2MgbOG7i2NoIHPhu60gaOG7p3knKTt9CiByZW5kZXIoKTsKfSk7CmZ1bmN0aW9uIGlzVGFza3NWaXNpYmxlKCl7Y29uc3QgdGFiPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWItdGFza3MnKTtpZighdGFiKXJldHVybiBmYWxzZTtjb25zdCBzdHlsZT1nZXRDb21wdXRlZFN0eWxlKHRhYik7cmV0dXJuIHN0eWxlLmRpc3BsYXkhPT0nbm9uZScmJnN0eWxlLnZpc2liaWxpdHkhPT0naGlkZGVuJyYmIXRhYi5oaWRkZW47fQpsZXQgd2FzVmlzaWJsZT1mYWxzZTsKZnVuY3Rpb24gdGljaygpe2NvbnN0IGFjdGl2ZT1pc1Rhc2tzVmlzaWJsZSgpO2lmKGFjdGl2ZSl7cGFuZWwoKTtpZighd2FzVmlzaWJsZXx8RGF0ZS5ub3coKS1sYXN0TG9hZGVkPjMwMDAwfHx0b2tlbigpIT09bGFzdFRva2VuKWxvYWQoZmFsc2UpO313YXNWaXNpYmxlPWFjdGl2ZTt9CmlmKGRvY3VtZW50LnJlYWR5U3RhdGU9PT0nbG9hZGluZycpZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsZnVuY3Rpb24oKXtzZXRJbnRlcnZhbCh0aWNrLDM1MDApO3RpY2soKX0pO2Vsc2V7c2V0SW50ZXJ2YWwodGljaywzNTAwKTt0aWNrKCk7fQp9KSgpOwo='),function(c){return c.charCodeAt(0);}))+'</'+'script>';
 // ERH-GVC7.6-CANCELLED-NOT-IN-UNFINISHED
@@ -2434,7 +2434,7 @@ async function open(id){if(busy)return;var t=token();if(t.length<16)return;activ
 async function act(action){if(!active||!preview||busy||!WRITE_ENABLED)return;var r=reason.value.trim(),p=preview.permissions||{};if(r.length<12||r.length>500){alert('Lý do phải từ 12 đến 500 ký tự.');return;}if(action==='GV_CANCEL_APPLY'&&(!p.canCancel||!preview.canApply))return;if(action==='GV_CANCEL_REQUEST'&&!p.canRequest)return;var id=active.id,t=active.token;if(token()!==t)return;if(!confirm((action==='GV_CANCEL_APPLY'?'Xác nhận HỦY phiếu ':'Gửi ĐỀ NGHỊ HỦY phiếu ')+id+'?\nLý do: '+r))return;
  busy=true;refreshButtons();result.textContent='Đang gửi một yêu cầu, không thao tác lại…';try{var ans=await server(action,[id,r],t);if(!ans||ans.ok!==true)throw Error('Chưa xác nhận lưu thành công');result.textContent=clean(ans.message||'Thao tác đã được ghi nhận')+'\n'+id;preview=null;if(action==='GV_CANCEL_APPLY'&&confirm('Phiếu đã hủy. Tải lại App để đồng bộ danh sách và thống kê?'))location.reload();}catch(e){result.textContent='Chưa xác nhận kết quả: '+clean(e.message)+'\nKHÔNG gửi lại trước khi kiểm tra trạng thái phiếu.';}finally{busy=false;refreshButtons();}}
 apply.addEventListener('click',function(){act('GV_CANCEL_APPLY');});request.addEventListener('click',function(){act('GV_CANCEL_REQUEST');});
-window.addEventListener('message',function(e){if(!e.data||e.data.type!=='ERH_GVC7_OPEN_CANCEL')return;var frame=document.querySelector('#content iframe[data-erh-d15-module="GV"]');var listFrame=document.querySelector('#erh-gv-stats-reuse iframe[data-erh-d15-module="BC33"]');if(document.body.getAttribute('data-erh-d15-module')!=='GV'||!((frame&&e.source===frame.contentWindow)||(listFrame&&e.source===listFrame.contentWindow)))return;var id=String(e.data.taskId||'');if(!/^GV-[A-Z0-9-]{8,95}$/i.test(id))return;open(id);});
+window.addEventListener('message',function(e){if(!e.data||e.data.type!=='ERH_GVC7_OPEN_CANCEL')return;var frame=document.querySelector('#content iframe[data-erh-d15-module="GV"]');if(!frame||e.source!==frame.contentWindow||document.body.getAttribute('data-erh-d15-module')!=='GV')return;var id=String(e.data.taskId||'');if(!/^GV-[A-Z0-9-]{8,95}$/i.test(id))return;open(id);});
 })();
 
 </script>
@@ -2470,18 +2470,73 @@ window.addEventListener('message',function(e){
 </style>
 
 <script id="erh-dash6-gv-bridge-src">
-// Retained GV iframe and its original write/cancel workflow stay intact.
-// Statistical list views are mounted from the original BC33 adapter in the GV host,
-// so no GV card table or replacement BC33 table is constructed.
-window.ERH_DASH6_GV_BRIDGE='';
-</script>
-<style id="erh-gv-reuse-existing-bc33-table-style">
-body[data-erh-d15-module="GV"] #content>#erh-gv-stats-reuse{flex:1 1 auto;min-height:0;height:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
-body[data-erh-d15-module="GV"] #erh-gv-stats-reuse>.erh-bc33-original-v17{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;height:100%;max-height:100%;overflow:hidden}
-body[data-erh-d15-module="GV"] #erh-gv-stats-reuse iframe[data-erh-d15-module="BC33"]{flex:1 1 auto;display:block;min-height:0;height:100%;max-height:100%;width:100%;border:0}
-</style>
-<script id="erh-gv-stats-cancel-row-bridge">
-window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT = "<script id=\"erh-gv-cancel-inline\">(function(){'use strict';\n var raf=0;\n function update(){raf=0;var tab=document.getElementById('tab-tasks');if(!tab||!tab.classList.contains('active'))return;\n  tab.querySelectorAll('.bc33d10-table tbody tr').forEach(function(row){\n   var anchor=row.querySelector('[data-d10-open],[data-viewtask]');if(!anchor)return;\n   var id=String(anchor.getAttribute('data-d10-open')||anchor.getAttribute('data-viewtask')||row.getAttribute('data-erh-task-id')||'').trim();\n   if(!/^GV-[A-Z0-9-]{8,95}$/i.test(id))return;\n   if(row.querySelector('.erh-gv-list-cancel'))return;\n   var btn=document.createElement('button');btn.type='button';btn.className='erh-gv-list-cancel';btn.textContent='Hủy';\n   btn.title='Kiểm tra quyền hủy phiếu đã giao '+id;\n   btn.style.cssText='display:inline-block;margin-left:6px;padding:3px 9px;border:1px solid #ce8d83;border-radius:6px;color:#a03221;background:#fff9f7;font:600 12px Arial,sans-serif;cursor:pointer';\n   btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();parent.postMessage({type:'ERH_GVC7_OPEN_CANCEL',taskId:id},'*')});\n   anchor.insertAdjacentElement('afterend',btn);\n  });\n }\n function schedule(){if(raf)return;raf=requestAnimationFrame(update)}\n new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});\n window.addEventListener('message',schedule);window.addEventListener('DOMContentLoaded',schedule);schedule();\n})();<\/script>";
+// GV statistic clicks stay inside the GV iframe; BC33 keeps its own existing router.
+window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'use strict';
+ var selection='assign',currentIds=null,scheduled=false;
+ var idPattern=/^GV-[A-Z0-9-]{8,95}$/i;
+ function savedId(node){
+  var id=String(node.getAttribute('data-viewunfinished')||node.getAttribute('data-task-id')||node.getAttribute('data-gvc72-task')||'').trim();
+  if(idPattern.test(id))return id;
+  var m=String(node.textContent||'').match(/GV-[A-Z0-9-]{8,95}/i);
+  return m?m[0]:'';
+ }
+ function offerCancel(){
+  var list=document.getElementById('tab-tasks');if(!list)return;
+  var viewButtons=list.querySelectorAll('button[data-viewunfinished]');
+  viewButtons.forEach(function(view){
+    var id=savedId(view);if(!id||view.nextElementSibling?.classList.contains('erh-gv-dashboard-cancel'))return;
+    // Check THIS task only. The old code checked the whole #taskList and
+    // suppressed cancellation controls for every other assigned task.
+    var existing=list.querySelectorAll('.erh-gvc72-card-action,[data-gvc72-task]');
+    for(var k=0;k<existing.length;k++){
+      if(String(existing[k].getAttribute('data-gvc72-task')||'')===id)return;
+    }
+    var cancel=document.createElement('button');cancel.type='button';cancel.className='erh-gv-dashboard-cancel';
+    cancel.textContent='Hủy phiếu đã giao';
+    cancel.setAttribute('aria-label','Kiểm tra quyền hủy giao việc '+id);
+    cancel.style.cssText='margin:4px 7px 8px;padding:7px 10px;border:1px solid #dc9a8d;border-radius:7px;background:#fff6f3;color:#a13220;font:600 12px Arial,sans-serif;cursor:pointer';
+    cancel.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+      parent.postMessage({type:'ERH_GVC7_OPEN_CANCEL',taskId:id},'*');
+    });
+    view.insertAdjacentElement('afterend',cancel);
+  });
+ }
+ function apply(){scheduled=false;offerCancel();
+  var tab=document.getElementById(selection==='done'?'tab-completed':'tab-tasks');
+  if(!tab||!tab.classList.contains('active'))return;
+  tab.querySelectorAll('[data-viewunfinished],.erhbc34-done-card[data-task-id]').forEach(function(row){
+    var id=savedId(row);if(!id)return;
+    var show=!currentIds||currentIds.has(id);
+    row.style.setProperty('display',show?'':'none',show?'':'important');
+    var next=row.nextElementSibling;
+    if(next&&next.classList.contains('erh-gv-dashboard-cancel'))next.style.display=show?'':'none';
+  });
+ }
+ function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
+ function route(action,taskIds){
+  // Use the exact existing GV tab controller; do not route to BC33.
+  if(typeof APP==='undefined'||!APP||typeof APP.openTab!=='function')return false;
+  if(action==='assign'){selection='assign';currentIds=null;APP.openTab('assign');return true;}
+  selection=action;
+  currentIds=Array.isArray(taskIds)?new Set(taskIds.map(String)):null;
+  APP.openTab(action==='done'?'completed':'tasks');schedule();
+  // GV list reads are asynchronous; render filters again once list data arrives.
+  setTimeout(schedule,150);setTimeout(schedule,750);
+  return true;
+ }
+ window.addEventListener('message',function(e){
+  if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;
+  if(!['assign','notstarted','doing','overdue','done','priority'].includes(e.data.action))return;
+  var ok=false;
+  try{ok=route(e.data.action,e.data.taskIds);}catch(err){
+    parent.postMessage({type:'ERH_DASH6_GV_ACK',requestId:e.data.requestId||0,ok:false,error:String(err&&err.message||err)},'*');return;
+  }
+  parent.postMessage({type:'ERH_DASH6_GV_ACK',requestId:e.data.requestId||0,ok:ok,error:ok?'':'GV chưa khởi tạo xong'},'*');
+ });
+ var target=document.getElementById('tab-tasks')||document.body;
+ new MutationObserver(schedule).observe(target,{childList:true,subtree:true});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+})();<`+`/script>`;
 </script>
 <!-- ERH_GV_LAYOUT_CLOSED_TASK_STATS_20261109_V1 -->
 <!-- ERH_BC33_SCRIPT_RECOVERY_20261109_V1 -->
@@ -2532,40 +2587,6 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!node){note('Không tìm thấy menu '+page);return false;}
   node.click();return true;
  }
- var gvStatHost=null,gvHidden=[],gvMounted=false,gvStatAction='';
- function gvStatStop(){
-  if(gvStatHost){
-   // Never unmount another BC33 view that the native menu may have mounted meanwhile.
-   if(moduleName()==='GV'&&gvMounted){var a=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();try{a?.unmount?.()}catch(_){} }
-   gvStatHost.remove();gvStatHost=null;
-  }
-  gvMounted=false;window.ERH_GV_STATS_EMBED_ACTIVE=false;
-  gvHidden.forEach(function(x){if(x.el.isConnected)x.el.style.display=x.display});gvHidden=[];
- }
- function gvStatOpen(status){
-  if(moduleName()!=='GV')return false;
-  var base=document.querySelector('#content');if(!base)return false;
-  var adapter=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();if(!adapter)return false;
-  gvStatAction=status;
-  if(!gvStatHost){
-   gvStatHost=document.createElement('section');gvStatHost.id='erh-gv-stats-reuse';
-   gvStatHost.style.cssText='display:flex;flex:1 1 auto;flex-direction:column;height:100%;min-height:0;width:100%;overflow:hidden';
-   Array.from(base.children).forEach(function(n){gvHidden.push({el:n,display:n.style.display});n.style.display='none'});
-   base.appendChild(gvStatHost);
-   var ctx={getToken:function(){return auth()},getDisplayActor:function(){return {code:'',name:''}}};
-   try{window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
-   catch(err){note('Không mở được bảng chi tiết: '+text(err.message||err));gvStatStop();return false}
-   finally{window.ERH_GV_STATS_EMBED_ACTIVE=false}
-  }
-  function sendGVStat(){
-    if(moduleName()!=='GV'||!gvStatHost||!gvStatHost.isConnected||gvStatAction!==status)return;
-    var f=gvStatHost.querySelector('iframe[data-erh-d15-module="BC33"]');
-    if(f&&f.contentWindow)f.contentWindow.postMessage({type:'ERH_DASH6_BC33_VIEW',status:status,taskIds:groups&&groups[status]||null},'*');
-  }
-  sendGVStat();setTimeout(sendGVStat,300);setTimeout(sendGVStat,1100);
-  return true;
- }
- window.ERH_GV_STATS_BEFORE_ROUTE=function(){if(gvStatHost)gvStatStop()};
  var gvRequestId=0,gvPending=null,gvRetryTimer=null;
  function gvCommand(action){
   var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
@@ -2599,13 +2620,13 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!labels.some(function(v){return v[0]===status}))return;
   chosen=status;display();note('');
   if(status==='gv'){
-   if(moduleName()==='GV'){gvStatStop();return;}
+   if(moduleName()==='GV'){gvCommand('assign');return;}
    pendingStatus='gv';goModule('wo');
    return;
   }
   if(status==='priority'){
    if(moduleName()==='BC33'){send();return;}
-   if(moduleName()==='GV'){gvStatOpen('priority');return;}
+   if(moduleName()==='GV'){gvCommand('priority');return;}
    return;
   }
   if(status==='report'){
@@ -2614,7 +2635,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   }
   // Statistics operate inside the currently selected module; never change the sidebar menu.
   if(moduleName()==='BC33'){send();return;}
-  if(moduleName()==='GV'){gvStatOpen(status);return;}
+  if(moduleName()==='GV'){gvCommand(status);return;}
  }
  function menuDefault(){
   var m=moduleName();
@@ -2622,7 +2643,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    if(old&&old.length===6){var endButtons=m==='GV'?[['priority','Việc ưu tiên:'],['gv','GIAO VIỆC']]:[['priority','Việc ưu tiên:'],['report','BÁO CÁO CÔNG VIỆC']];
     for(var i=0;i<2;i++){old[4+i].dataset.status=endButtons[i][0];old[4+i].querySelector('span').textContent=endButtons[i][1];}}
   }
-  if(m==='GV')chosen='gv';else if(m==='BC33')chosen=pendingStatus||'report';else chosen='';pendingStatus='';display();if(m==='BC33')send();if(m==='GV'){gvStatStop()}if(m==='GV'||m==='BC33')refresh(false)
+  if(m==='GV')chosen='gv';else if(m==='BC33')chosen=pendingStatus||'report';else chosen='';pendingStatus='';display();if(m==='BC33')send();if(m==='GV'){gvCommand('assign')}if(m==='GV'||m==='BC33')refresh(false)
  }
  function consume(result,session){if(auth()!==session)return;var rs=result&&result.results;
   var a=Array.isArray(rs)&&rs.find(function(x){return x.id==='901'}),b=Array.isArray(rs)&&rs.find(function(x){return x.id==='902'});
@@ -2668,10 +2689,10 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   root.appendChild(line);var hint=document.createElement('div');hint.className='erh-dash6-note';hint.textContent='Thống kê theo dữ liệu được phép xem';root.appendChild(hint);
   content.parentNode.insertBefore(root,content);menuDefault();
  }
- function routeChanged(){if(moduleName()!=='GV'){if(gvStatHost){gvStatHost.remove();gvStatHost=null;gvMounted=false;gvHidden=[]}}init();menuDefault()}
+ function routeChanged(){init();menuDefault()}
  document.addEventListener('load',function(e){
  var f=e.target;if(!f||f.tagName!=='IFRAME'||f.dataset.erhD15Module!=='GV')return;
- if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvStatOpen(chosen);
+ if(moduleName()==='GV')gvCommand(['notstarted','doing','overdue','done','priority'].includes(chosen)?chosen:'assign');
 },true);
  window.addEventListener('message',function(e){var f=frame();if(!f||e.source!==f.contentWindow||!e.data||e.data.type!=='ERH_T4_UI_PHASE_R4'||e.data.module!=='BC33')return;if(e.data.phase==='ready'||e.data.phase==='painted')send()});
  function start(){init();new MutationObserver(routeChanged).observe(document.body,{attributes:true,attributeFilter:['data-erh-d15-module']});}
