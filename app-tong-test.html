@@ -1,3 +1,4 @@
+<!-- ERH_GV_BC33_MEMORY_RETAIN_V3_20261110: per-root BC33 adapter; no extra RPC on tab switches -->
 <!-- ERH-GV-CACHE-PRIORITY-0311-TEST: GV RPC only; no server revision API -->
 <!-- P2F1071-BC33-PENDING-RECONCILE-GIT-TEST -->
 <!-- ERH-D32.2-PLAN-BUTTON-ON-PLAN-ROW-ONLY -->
@@ -971,8 +972,15 @@ const ERH_P3B_PARKED=Object.create(null);
 function ERH_P3B_discardOne(id){
   const p=ERH_P3B_PARKED[id];if(!p)return;
   delete ERH_P3B_PARKED[id];
-  try{const a=ERH_T4_ADAPTERS[id];if(a&&typeof a.unmount==='function')a.unmount();}
-  catch(e){console.warn('[TAB4 retain] discard',id,String(e));}
+  try{
+    const a=ERH_T4_ADAPTERS[id];if(a&&typeof a.unmount==='function'){
+      if(id==='BC33')a.unmount(p.root);else a.unmount();
+    }
+    if(id==='GV'){
+      const stats=p.root.querySelector('#erh-gv-stats-reuse');
+      if(stats&&ERH_T4_ADAPTERS.BC33)ERH_T4_ADAPTERS.BC33.unmount(stats);
+    }
+  }catch(e){console.warn('[TAB4 retain] discard',id,String(e));}
   try{p.root.remove();}catch(e){}
 }
 function ERH_P3B_discard(){
@@ -1001,12 +1009,10 @@ function ERH_P3B_resume(id){
   }
   const activeRoot=document.querySelector('#content');
   if(!activeRoot||!activeRoot.parentNode||!p.root.isConnected)return false;
-  // GV statistics deliberately reuse the BC33 adapter. Its mount() may have
-  // unmounted the iframe parked here. Never resume that now-empty BC33 root.
+  // V3: BC33 and GV statistics now retain separate iframe instances.
+  // A genuinely damaged parked root is rebuilt, not silently shown blank.
   if(id==='BC33'&&!p.root.querySelector('iframe[data-erh-d15-module="BC33"]')){
-    delete ERH_P3B_PARKED[id];
-    p.root.remove();
-    return false; // Let the existing BC33 adapter create a fresh original view.
+    delete ERH_P3B_PARKED[id];p.root.remove();return false;
   }
   activeRoot.remove();
   p.root.id='content';p.root.hidden=false;p.root.style.display='';
@@ -1515,10 +1521,20 @@ window.addEventListener('pagehide',function(){if(watcher)watcher.disconnect();})
 })();<\/script>`;
 const READ_METHODS=new Set(["ERH_BC33_manageCategory","ERH_BC33_saveNewDetail","ERH_BC33_taskFast","ERH_BC33_tasks","ERH_BC33_submitWithEvidence","ERH_BC33_uploadEvidence", "ERH_BC33_submit", "ERH_BC33_previewSubmit", "ERH_BC_V3_context", "APP_WEB_bootstrap", "APP_WEB_getAssignmentSources", "APP_GIAOVIEC_getMyTasks", "APP_BAOCAO_getMyHistory", "APP_BAOCAO_getMyDailyReport", "APP_DASHBOARD_getSummary", "APP_GIAOVIEC_V5_getSourceMap", "APP_GIAOVIEC_V5_getTaskForEdit", "APP_DIADIEM_getAll", "ERH_V8_myAssignments", "ERH_V9_getTask", "ERH_V9_canEditCatalog", "ERH_GV14_unassignedPlans", "ERH_GV14_runtimeReadOnlyV11410", "ERH_CTD_list", "ERH_CT_getDetails", "ERH_HUB_listTaskProgress", "ERH_BC33_boot", "ERH_BC33_task", "ERH_HUB_getWork", "ERH_HUB_getReport", "ERH_HUB_listRecent", "ERH_BC33_viewFile", "ERH_BC33_checkRequest", "ERH_BC_V3_pending", "ERH_BC33_listCompleted", "ERH_BC33_getCompleted", "ERH_BC33_viewCompleted", "ERH_BC33_daily"]);
 const BATCH_READ_METHODS=new Set(["ERH_BC33_taskFast","ERH_BC33_tasks","ERH_BC_V3_context", "ERH_BC33_boot", "ERH_BC33_task", "ERH_HUB_getWork", "ERH_HUB_getReport", "ERH_HUB_listRecent", "ERH_HUB_listTaskProgress", "ERH_BC33_listCompleted", "ERH_BC33_getCompleted", "ERH_BC33_viewCompleted", "APP_WEB_bootstrap", "APP_WEB_getAssignmentSources", "APP_GIAOVIEC_getMyTasks", "APP_BAOCAO_getMyHistory", "APP_DASHBOARD_getSummary", "APP_GIAOVIEC_V5_getSourceMap", "APP_DIADIEM_getAll", "ERH_V8_myAssignments", "ERH_GV14_unassignedPlans", "ERH_GV14_runtimeReadOnlyV11410"]);
-var active=null;
-function unmount(){if(!active)return;active.cleanup();active.frame.src='about:blank';active.host.remove();active=null;}
+// V3: one BC33 instance per connected host. GV statistics and native BC33 no longer evict each other.
+const bc33FramesByRoot=new Map();
+function unmount(root){
+ if(root){
+  const p=bc33FramesByRoot.get(root);if(!p)return;
+  bc33FramesByRoot.delete(root);p.cleanup();p.frame.src='about:blank';p.host.remove();return;
+ }
+ // The host's legacy unmount() is used for a true teardown (logout/session revoke).
+ Array.from(bc33FramesByRoot.keys()).forEach(unmount);
+}
 function mount(root,ctx){
- unmount();if(!root||!ctx||typeof ctx.getToken!=='function'||!ctx.getToken())throw Error('BC33_APP_TONG_SESSION_REQUIRED');
+ unmount(root);
+ let active=null; // Frame-local alive check, never shared with a different mount.
+if(!root||!ctx||typeof ctx.getToken!=='function'||!ctx.getToken())throw Error('BC33_APP_TONG_SESSION_REQUIRED');
  const token=ctx.getToken(),host=document.createElement('div'),frame=document.createElement('iframe'),notice=document.createElement('div');
  host.className='erh-bc33-original-v17';frame.dataset.erhD15Module='BC33';frame.title='Báo cáo công việc BC33 – giao diện gốc';frame.setAttribute('sandbox','allow-scripts');frame.style.cssText='display:block;width:100%;max-width:100%;min-width:0;height:1000px;border:0;background:#f6f7f9;overflow:hidden';
  notice.dataset.erhD15Inline='';notice.setAttribute('role','status');notice.style.cssText='padding:10px 12px;color:#53677a;font:13px Segoe UI,Arial,sans-serif';notice.textContent='UI-R4 · Đang mở giao diện Báo cáo công việc…';
@@ -1657,7 +1673,7 @@ function mount(root,ctx){
   if(!painted){if(queue.length<40)queue.push(req);return;}run(req);
  }
  function cleanup(){stopListViewportD13();clearSendingD8();alive=false;queue.length=0;readQueue.length=0;clearTimeout(readTimer);readTimer=null;clearTimeout(readFlightTimer);readFlightTimer=null;pending.forEach(function(done){done(false,null,'Đã đóng giao diện.');});pending.clear();window.removeEventListener('message',listener);}
- active={host,frame,listener,cleanup};window.addEventListener('message',listener);host.appendChild(notice);host.appendChild(frame);root.appendChild(host);frame.srcdoc=DOC.replace(/<\/head>/i,'<style id="erh-two-module-nav-hide-bc33">nav.tabs{display:none!important}</style></head>').replace(/<\/body>/i,ERH_BC33_DASH6_BRIDGE+(window.ERH_GV_STATS_EMBED_ACTIVE?(window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT||''):'')+'</body>');return {unmount};
+ active={host,frame,listener,cleanup};bc33FramesByRoot.set(root,active);window.addEventListener('message',listener);host.appendChild(notice);host.appendChild(frame);root.appendChild(host);frame.srcdoc=DOC.replace(/<\/head>/i,'<style id="erh-two-module-nav-hide-bc33">nav.tabs{display:none!important}</style></head>').replace(/<\/body>/i,ERH_BC33_DASH6_BRIDGE+(window.ERH_GV_STATS_EMBED_ACTIVE?(window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT||''):'')+'</body>');return {unmount};
 }
 window.ERH_T4_registerModule('BC33',{mount,unmount});
 
@@ -2531,7 +2547,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
 <script id="erh-dash6-script">
 (function(){'use strict';
  var labels=[['notstarted','Chưa thực hiện:'],['doing','Đang thực hiện:'],['overdue','Quá hạn:'],['done','Đã hoàn thành:'],['priority','Việc ưu tiên:'],['gv','GIAO VIỆC'],['report','BÁO CÁO CÔNG VIỆC']];
- var root=null,counts=null,groups=null,last=0,token='',loading=false,chosen='',pendingStatus='';
+ var root=null,counts=null,groups=null,last=0,token='',loading=false,chosen='',pendingStatus='',gvLast='gv',bc33Last='report';
  function byId(x){return document.getElementById(x)}
  function text(x){return String(x==null?'':x).trim()}
  function normalize(x){return text(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'D').replace(/[_-]/g,' ').replace(/\s+/g,' ').toUpperCase()}
@@ -2556,20 +2572,31 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
  }
  var gvStatHost=null,gvHidden=[],gvMounted=false,gvStatAction='';
  function gvStatStop(){
-  if(gvStatHost){
-   // Never unmount another BC33 view that the native menu may have mounted meanwhile.
-   if(moduleName()==='GV'&&gvMounted){var a=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();try{a?.unmount?.()}catch(_){} }
-   gvStatHost.remove();gvStatHost=null;
+  // V3: preserve the already-loaded BC33 statistics iframe inside the GV root.
+  // Only hide the view; the next click must paint from memory without mount/read.
+  if(gvStatHost&&gvStatHost.isConnected){
+   gvStatHost.classList.add('erh-gv-stats-hidden');gvStatHost.style.display='none';
   }
-  gvMounted=false;window.ERH_GV_STATS_EMBED_ACTIVE=false;
-  gvHidden.forEach(function(x){if(x.el.isConnected){x.el.classList.remove('erh-gv-stats-hidden');x.el.style.display=x.display}});gvHidden=[];
+  window.ERH_GV_STATS_EMBED_ACTIVE=false;
+  gvHidden.forEach(function(x){if(x.el.isConnected){x.el.classList.remove('erh-gv-stats-hidden');x.el.style.display=x.display}});
+  gvHidden=[];
  }
  function gvStatOpen(status){
   if(moduleName()!=='GV')return false;
   var base=document.querySelector('#content');if(!base)return false;
   var adapter=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();if(!adapter)return false;
   gvStatAction=status;
-  if(gvStatHost&&!gvStatHost.isConnected)gvStatStop();
+  if(gvStatHost&&!gvStatHost.isConnected){
+   // Only a disconnected/stale root may be remounted; a parked root stays connected.
+   gvStatHost=null;gvMounted=false;gvHidden=[];
+  }
+  if(gvStatHost){
+   gvStatHost.classList.remove('erh-gv-stats-hidden');gvStatHost.style.display='flex';
+   Array.from(base.children).forEach(function(n){
+    if(n===gvStatHost)return;
+    gvHidden.push({el:n,display:n.style.display});n.classList.add('erh-gv-stats-hidden');n.style.display='none';
+   });
+  }
   if(!gvStatHost){
    gvStatHost=document.createElement('section');gvStatHost.id='erh-gv-stats-reuse';
    gvStatHost.style.cssText='display:flex;flex:1 1 auto;flex-direction:column;height:100%;min-height:0;width:100%;overflow:hidden';
@@ -2591,7 +2618,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   sendGVStat();setTimeout(sendGVStat,300);setTimeout(sendGVStat,1100);
   return true;
  }
- window.ERH_GV_STATS_BEFORE_ROUTE=function(){if(gvStatHost)gvStatStop()};
+ window.ERH_GV_STATS_BEFORE_ROUTE=function(){/* V3: preserve GV statistics for root parking; no unmount */};
  var gvRequestId=0,gvPending=null,gvRetryTimer=null;
  function gvCommand(action){
   var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
@@ -2623,7 +2650,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
  }
  function select(status){
   if(!labels.some(function(v){return v[0]===status}))return;
-  chosen=status;display();note('');
+  chosen=status;if(moduleName()==='GV')gvLast=status;else if(moduleName()==='BC33')bc33Last=status;display();note('');
   if(status==='gv'){
    if(moduleName()==='GV'){gvStatStop();return;}
    pendingStatus='gv';goModule('wo');
@@ -2648,7 +2675,14 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    if(old&&old.length===6){var endButtons=m==='GV'?[['priority','Việc ưu tiên:'],['gv','GIAO VIỆC']]:[['priority','Việc ưu tiên:'],['report','BÁO CÁO CÔNG VIỆC']];
     for(var i=0;i<2;i++){old[4+i].dataset.status=endButtons[i][0];old[4+i].querySelector('span').textContent=endButtons[i][1];}}
   }
-  if(m==='GV')chosen='gv';else if(m==='BC33')chosen=pendingStatus||'report';else chosen='';pendingStatus='';display();if(m==='BC33')send();if(m==='GV'){gvStatStop()}if(m==='GV'||m==='BC33')refresh(false)
+  if(m==='GV')chosen=gvLast;else if(m==='BC33')chosen=pendingStatus||bc33Last;else chosen='';
+  pendingStatus='';display();
+  if(m==='BC33')send();
+  if(m==='GV'){
+   if(chosen==='gv')gvStatStop();
+   else if(gvStatHost&&gvStatHost.isConnected)gvStatOpen(chosen);
+  }
+  if(m==='GV'||m==='BC33')refresh(false)
  }
  function consume(result,session){if(auth()!==session)return;var rs=result&&result.results;
   var a=Array.isArray(rs)&&rs.find(function(x){return x.id==='901'}),b=Array.isArray(rs)&&rs.find(function(x){return x.id==='902'});
@@ -2694,7 +2728,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   root.appendChild(line);var hint=document.createElement('div');hint.className='erh-dash6-note';hint.textContent='Thống kê theo dữ liệu được phép xem';root.appendChild(hint);
   content.parentNode.insertBefore(root,content);menuDefault();
  }
- function routeChanged(){if(moduleName()!=='GV'){if(gvStatHost){gvStatHost.remove();gvStatHost=null;gvMounted=false;gvHidden=[]}}init();menuDefault()}
+ function routeChanged(){init();menuDefault()}
  document.addEventListener('load',function(e){
  var f=e.target;if(!f||f.tagName!=='IFRAME'||f.dataset.erhD15Module!=='GV')return;
  if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvStatOpen(chosen);
