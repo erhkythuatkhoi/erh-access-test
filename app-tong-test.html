@@ -1001,6 +1001,13 @@ function ERH_P3B_resume(id){
   }
   const activeRoot=document.querySelector('#content');
   if(!activeRoot||!activeRoot.parentNode||!p.root.isConnected)return false;
+  // GV statistics deliberately reuse the BC33 adapter. Its mount() may have
+  // unmounted the iframe parked here. Never resume that now-empty BC33 root.
+  if(id==='BC33'&&!p.root.querySelector('iframe[data-erh-d15-module="BC33"]')){
+    delete ERH_P3B_PARKED[id];
+    p.root.remove();
+    return false; // Let the existing BC33 adapter create a fresh original view.
+  }
   activeRoot.remove();
   p.root.id='content';p.root.hidden=false;p.root.style.display='';
   delete ERH_P3B_PARKED[id];
@@ -2491,6 +2498,14 @@ window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT = "<script id=\"erh-gv-cancel-inline\">(
 body[data-erh-d15-module="GV"] #content > .erh-gv-stats-hidden {
   display:none!important;
 }
+body[data-erh-d15-module="GV"] #content > #erh-gv-stats-reuse:not(.erh-gv-stats-hidden){
+  display:flex!important;flex:1 1 0%!important;min-height:0!important;
+  height:100%!important;max-height:100%!important;overflow:hidden!important;
+}
+body[data-erh-d15-module="GV"] #erh-gv-stats-reuse > .erh-bc33-original-v17{
+  display:flex!important;flex:1 1 0%!important;min-height:0!important;
+  height:100%!important;overflow:hidden!important;
+}
 </style>
 <!-- ERH_DASH6_UNIFIED_20261109: host-only UI router; existing GV/BC33 iframe views. -->
 <style id="erh-dash6-style">
@@ -2554,10 +2569,14 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   var base=document.querySelector('#content');if(!base)return false;
   var adapter=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();if(!adapter)return false;
   gvStatAction=status;
+  if(gvStatHost&&!gvStatHost.isConnected)gvStatStop();
   if(!gvStatHost){
    gvStatHost=document.createElement('section');gvStatHost.id='erh-gv-stats-reuse';
    gvStatHost.style.cssText='display:flex;flex:1 1 auto;flex-direction:column;height:100%;min-height:0;width:100%;overflow:hidden';
-   Array.from(base.children).forEach(function(n){gvHidden.push({el:n,display:n.style.display});n.classList.add('erh-gv-stats-hidden');n.style.display='none'});
+   Array.from(base.children).forEach(function(n){
+    if(n.id==='erh-gv-stats-reuse')return;
+    gvHidden.push({el:n,display:n.style.display});n.classList.add('erh-gv-stats-hidden');n.style.display='none';
+   });
    base.appendChild(gvStatHost);
    var ctx={getToken:function(){return auth()},getDisplayActor:function(){return {code:'',name:''}}};
    try{window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
