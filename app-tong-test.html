@@ -2471,50 +2471,50 @@ window.addEventListener('message',function(e){
 
 <script id="erh-dash6-gv-bridge-src">
 window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'use strict';
- // Route GV statistics only to GV's own existing task/completed views.
- var chosen='assign',taskIds=null,observed=null,observer=null;
- function apply(){
+ // Only the GV iframe receives these messages. Do not mount, unmount, or navigate to BC33.
+ var chosen='assign', taskIds=null, watcher=null, watched=null;
+ var hiddenClass='erh-gv-dash6-filtered-out';
+ var style=document.createElement('style');style.textContent='.'+hiddenClass+'{display:none!important}';document.head.appendChild(style);
+ function currentApp(){return typeof APP!=='undefined'?APP:window.APP;}
+ function clearFilter(){document.querySelectorAll('.'+hiddenClass).forEach(function(n){n.classList.remove(hiddenClass)});}
+ function applyFilter(){
   if(!taskIds||chosen==='assign')return;
-  var pane=document.getElementById(chosen==='done'?'tab-completed':'tab-tasks');
-  if(!pane)return;
-  var list=pane.querySelector(chosen==='done'?'#erhbc33doneRows':'#taskList');
-  if(!list)return;
-  var cards=chosen==='done'?list.querySelectorAll('.card'):list.querySelectorAll('.task');
-  cards.forEach(function(card){
+  var done=chosen==='done',tab=document.getElementById(done?'tab-completed':'tab-tasks');
+  if(!tab||!tab.classList.contains('active'))return;
+  var list=tab.querySelector(done?'#erhbc33doneRows':'#taskList');if(!list)return;
+  list.querySelectorAll(done?'.card':'.task').forEach(function(card){
    var id='';
-   if(chosen==='done'){
-    var btn=card.querySelector('[data-viewtask]');id=btn?btn.getAttribute('data-viewtask'):'';
-   }else{
-    var badge=card.querySelector('.badge');id=badge?badge.textContent.trim():'';
-   }
-   card.style.display=id&&taskIds.has(String(id))?'':'none';
+   if(done){var b=card.querySelector('[data-viewtask]');id=b?b.getAttribute('data-viewtask'):'';}
+   else{var badge=card.querySelector('.badge');id=badge?badge.textContent.trim():'';}
+   card.classList.toggle(hiddenClass,!id||!taskIds.has(id));
   });
  }
- function watch(){
-  var pane=document.getElementById(chosen==='done'?'tab-completed':'tab-tasks');
-  if(!pane)return;
-  if(observed!==pane){
-   if(observer)observer.disconnect();observed=pane;
-   observer=new MutationObserver(apply);
-   observer.observe(pane,{childList:true,subtree:true});
+ function watch(tab){
+  if(watched!==tab){if(watcher)watcher.disconnect();watched=tab;
+   watcher=new MutationObserver(applyFilter);watcher.observe(tab,{childList:true,subtree:true});
   }
-  apply();
+  applyFilter();
  }
- function route(a,ids){
-  if(!window.APP||typeof APP.openTab!=='function')return false;
-  if(a==='assign'){
-   if(observer)observer.disconnect();observer=null;observed=null;
-   chosen='assign';taskIds=null;APP.openTab('assign');return true;
+ function reset(){chosen='assign';taskIds=null;if(watcher)watcher.disconnect();watcher=null;watched=null;clearFilter();}
+ function route(action,ids){
+  var app=currentApp();if(!app||typeof app.openTab!=='function')return false;
+  if(action==='assign'){
+   reset();var form=document.getElementById('tab-assign');
+   if(!form||!form.classList.contains('active'))app.openTab('assign');
+   return true;
   }
-  if(!['notstarted','doing','overdue','done','priority'].includes(a))return false;
-  chosen=a;taskIds=Array.isArray(ids)?new Set(ids.map(String)):null;
-  var pane=a==='done'?'completed':'tasks';
-  var current=document.getElementById('tab-'+pane);
-  // A new statistic in the same GV list only changes the local filter, not the route.
-  if(!current||!current.classList.contains('active'))APP.openTab(pane);
-  watch();
-  return true;
+  if(!['notstarted','doing','overdue','done','priority'].includes(action))return false;
+  chosen=action;taskIds=Array.isArray(ids)?new Set(ids.map(String)):null;
+  clearFilter();
+  var target=action==='done'?'completed':'tasks',tab=document.getElementById('tab-'+target);
+  if(!tab)return false;
+  if(!tab.classList.contains('active'))app.openTab(target);
+  watch(tab);return true;
  }
+ // Native GV tab buttons must work normally, without leaving a statistics filter behind.
+ document.addEventListener('click',function(e){
+  if(e.target.closest('nav.tabs [data-tab]'))reset();
+ },true);
  window.addEventListener('message',function(e){
   if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;
   route(e.data.action,e.data.taskIds);
@@ -2590,7 +2590,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   }
   if(status==='priority'){
    if(moduleName()==='BC33'){send();return;}
-   if(moduleName()==='GV'){gvCommand(status);return;}
+   if(moduleName()==='GV'){gvCommand('priority');return;}
    return;
   }
   if(status==='report'){
@@ -2598,7 +2598,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    goModule('report-work');return;
   }
   if(moduleName()==='BC33'){send();return;}
-  // GV statistics stay inside GV; never activate the BC33 menu.
+  // Statistic buttons on GV only change GV's own list. Keep the BC33 screen untouched.
   if(moduleName()==='GV'){gvCommand(status);return;}
  }
  function menuDefault(){
