@@ -2485,6 +2485,13 @@ window.ERH_GV_STATS_CANCEL_FRAME_SCRIPT = "<script id=\"erh-gv-cancel-inline\">(
 </script>
 <!-- ERH_GV_LAYOUT_CLOSED_TASK_STATS_20261109_V1 -->
 <!-- ERH_BC33_SCRIPT_RECOVERY_20261109_V1 -->
+<!-- ERH_GV_STATS_SINGLE_VIEW_20261110_V1: GV-only visibility routing; BC33/BM01 untouched. -->
+<style id="erh-gv-stats-single-view-20261110">
+/* Override the earlier host viewport display:flex!important only while a GV list is selected. */
+body[data-erh-d15-module="GV"] #content > .erh-gv-stats-hidden {
+  display:none!important;
+}
+</style>
 <!-- ERH_DASH6_UNIFIED_20261109: host-only UI router; existing GV/BC33 iframe views. -->
 <style id="erh-dash6-style">
 #erh-dash6{display:none;position:sticky;top:48px;z-index:19;margin:0;padding:7px 14px 6px;background:#f3f8fc;border-bottom:1px solid #d9e8f3;box-shadow:0 3px 8px #17365312;box-sizing:border-box}
@@ -2540,7 +2547,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    gvStatHost.remove();gvStatHost=null;
   }
   gvMounted=false;window.ERH_GV_STATS_EMBED_ACTIVE=false;
-  gvHidden.forEach(function(x){if(x.el.isConnected)x.el.style.display=x.display});gvHidden=[];
+  gvHidden.forEach(function(x){if(x.el.isConnected){x.el.classList.remove('erh-gv-stats-hidden');x.el.style.display=x.display}});gvHidden=[];
  }
  function gvStatOpen(status){
   if(moduleName()!=='GV')return false;
@@ -2550,7 +2557,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!gvStatHost){
    gvStatHost=document.createElement('section');gvStatHost.id='erh-gv-stats-reuse';
    gvStatHost.style.cssText='display:flex;flex:1 1 auto;flex-direction:column;height:100%;min-height:0;width:100%;overflow:hidden';
-   Array.from(base.children).forEach(function(n){gvHidden.push({el:n,display:n.style.display});n.style.display='none'});
+   Array.from(base.children).forEach(function(n){gvHidden.push({el:n,display:n.style.display});n.classList.add('erh-gv-stats-hidden');n.style.display='none'});
    base.appendChild(gvStatHost);
    var ctx={getToken:function(){return auth()},getDisplayActor:function(){return {code:'',name:''}}};
    try{window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
