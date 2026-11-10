@@ -2526,6 +2526,16 @@ window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'u
    if(/^GV-[A-Z0-9-]{8,95}$/i.test(id))parent.postMessage({type:'ERH_GVC7_OPEN_CANCEL',taskId:id},'*');
    return;
   }
+  if(e.data.action==='view'){
+   var taskId=String(e.data.taskId||'').trim();
+   if(!/^GV-[A-Z0-9-]{8,95}$/i.test(taskId))return;
+   reset();
+   // The original GV V9 viewer already renders the complete assignment and detail rows.
+   var nativeViewer=window.ERH_GV_V9;
+   if(nativeViewer&&typeof nativeViewer.openTask==='function')nativeViewer.openTask(taskId);
+   else {var app=currentApp();if(app&&typeof app.toast==='function')app.toast('Chưa tải xong chức năng xem phiếu Giao việc.');}
+   return;
+  }
   route(e.data.action,e.data.taskIds);
  });
 })();<`+`/script>`;
@@ -2599,6 +2609,16 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
 
  // GV-only detail view. Read the SAME authorized task rows already used by the top counters.
  // Neither BC33's iframe nor its mount/unmount, table code, RPC or cache is touched.
+ function openPassedGvView(taskId){
+  if(moduleName()!=='GV'||!/^GV-[A-Z0-9-]{8,95}$/i.test(text(taskId)))return;
+  var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
+  if(!f||!f.contentWindow){note('Chưa tải xong màn hình Giao việc để xem phiếu.');return;}
+  // Do not create a second, incomplete detail dialog: use the original GV V9 view (already passed).
+  chosen='gv';display();gvView('gv');
+  var send=function(){if(f.isConnected&&f.contentWindow)f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:'view',taskId:text(taskId)},'*');};
+  try{if(f.contentDocument&&f.contentDocument.readyState!=='complete'){f.addEventListener('load',send,{once:true});return;}}catch(_e){}
+  send();
+ }
  function gvView(status){
   if(moduleName()!=='GV')return;
   var content=byId('content');if(!content)return;
@@ -2646,20 +2666,11 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
   table.appendChild(thead);var tbody=document.createElement('tbody');table.appendChild(tbody);wrap.appendChild(table);panel.appendChild(wrap);
   var footer=document.createElement('p');footer.style.cssText='font-size:11px;color:#597188;margin:7px 0';panel.appendChild(footer);
   function dateText(s){var v=text(s),m=v.match(/^(\d{4})-(\d\d)-(\d\d)/);return m?m[3]+'/'+m[2]+'/'+m[1]:v||'—';}
-  function detail(t){
-   var modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:#17365377;z-index:9000;display:flex;justify-content:center;align-items:center;padding:15px';
-   var box=document.createElement('div');box.style.cssText='width:min(680px,100%);max-height:88vh;overflow:auto;border-radius:10px;background:white;padding:16px;font:13px Arial;color:#173653';
-   var h=document.createElement('h3');h.textContent=t.name||t.id;box.appendChild(h);
-   [['Mã phiếu',t.id],['Dự án',t.project],['Hạng mục',t.category],['Hệ thống',t.system],['Người phụ trách',t.assignee],['Ngày giao',dateText(t.assignDate)],['Hạn hoàn thành',dateText(t.dueDate)],['Trạng thái',t.status]].forEach(function(k){var p=document.createElement('p');p.style.cssText='margin:6px 0';var strong=document.createElement('b');strong.textContent=k[0]+': ';p.appendChild(strong);p.appendChild(document.createTextNode(k[1]||'—'));box.appendChild(p)});
-   if(t.details.length){var head=document.createElement('h4');head.textContent='Chi tiết công việc';box.appendChild(head);t.details.forEach(function(d,i){var p=document.createElement('p');p.textContent=(i+1)+'. '+text(d&& (d.name||d.title||d.detail||d.description))+' — '+text(d&&d.status);box.appendChild(p)});}
-   var close=document.createElement('button');close.textContent='Đóng';close.style.cssText='padding:7px 14px;margin-top:8px;cursor:pointer';close.onclick=function(){modal.remove();};box.appendChild(close);
-   modal.onclick=function(e){if(e.target===modal)modal.remove()};modal.appendChild(box);panel.appendChild(modal);
-  }
   function draw(){tbody.replaceChildren();var visible=items.filter(function(t){return fields.every(function(f){return !selectors[f[0]].value||t[f[0]]===selectors[f[0]].value;});});
    visible.forEach(function(t,i){var tr=document.createElement('tr');
     var values=[String(i+1),t.project,t.category,t.system,null,dateText(t.assignDate),dateText(status==='done'?t.completedDate:t.dueDate),t.assignee,status==='overdue'?'Quá hạn':status==='priority'?t.priority:status==='notstarted'?'Chưa thực hiện':status==='doing'?'Đang thực hiện':'Đã hoàn thành'];
     values.forEach(function(v,k){var td=document.createElement('td');td.style.cssText='padding:8px 7px;border-bottom:1px solid #e0e9f1;vertical-align:top;overflow-wrap:anywhere';
-     if(k===4){var bold=document.createElement('strong');bold.textContent=t.name||'—';td.appendChild(bold);var note=document.createElement('div');note.style.cssText='font-size:11px;color:#6a7e8e;margin-top:4px';note.textContent=t.details.map(function(d){return text(d&&(d.name||d.title||d.detail));}).filter(Boolean).join(' · ');td.appendChild(note);var actions=document.createElement('span');actions.style.cssText='display:inline-flex;gap:10px;margin-left:10px';var view=document.createElement('button');view.textContent='Xem';view.type='button';view.style.cssText='cursor:pointer;color:#0865ac;border:none;background:transparent;text-decoration:underline';view.onclick=function(){detail(t)};actions.appendChild(view);
+     if(k===4){var bold=document.createElement('strong');bold.textContent=t.name||'—';td.appendChild(bold);var note=document.createElement('div');note.style.cssText='font-size:11px;color:#6a7e8e;margin-top:4px';note.textContent=t.details.map(function(d){return text(d&&(d.name||d.title||d.detail));}).filter(Boolean).join(' · ');td.appendChild(note);var actions=document.createElement('span');actions.style.cssText='display:inline-flex;gap:10px;margin-left:10px';var view=document.createElement('button');view.textContent='Xem';view.type='button';view.style.cssText='cursor:pointer;color:#0865ac;border:none;background:transparent;text-decoration:underline';view.onclick=function(){openPassedGvView(t.id)};actions.appendChild(view);
       if(status!=='done'&&/^GV-[A-Z0-9-]{8,95}$/i.test(t.id)) {var cancel=document.createElement('button');cancel.textContent='Hủy';cancel.type='button';cancel.style.cssText='cursor:pointer;color:#ad2921;border:1px solid #e2afa8;background:white;border-radius:4px;padding:2px 5px';cancel.onclick=function(){gvCommand('cancel',t.id)};actions.appendChild(cancel)}td.appendChild(actions);
      }else{td.textContent=v||'—'}tr.appendChild(td);});tbody.appendChild(tr);
    });footer.textContent='Hiển thị '+visible.length+' / '+items.length+' công việc trong nhóm '+names[status]+'.';
