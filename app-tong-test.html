@@ -1921,7 +1921,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       try{const saved=localStorage.getItem(draftStorageKey);if(saved&&saved.length<=250000&&JSON.parse(saved)&&typeof JSON.parse(saved)==='object')draftBoot.ERH_GIAO_VIEC_DRAFT_V4=saved;}catch(e){}
       const safeDraft=JSON.stringify(draftBoot).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
       let iframeHtml=ORIGINAL_DOC.replace('__ACTOR__',safeActor).replace('__ERH_T4_GV_DRAFT_BOOT__',safeDraft);
-      iframeHtml=iframeHtml.replace('</head>',cleanCss+'</head>').replace('</body>',sizeTag+(window.ERH_GVC7_FRAME_SCRIPT||'')+(window.ERH_DASH6_GV_BRIDGE||'')+'</body>');
+      iframeHtml=iframeHtml.replace('</head>',cleanCss+'</head>').replace(/<\/body>/i,sizeTag+(window.ERH_GVC7_FRAME_SCRIPT||'')+(window.ERH_DASH6_GV_BRIDGE||'')+'</body>');
          if(instance.cancelled||current!==instance||!frame.isConnected)return;
          p3log.srcdocMs=Math.round(performance.now()-p3t0);
          p3log.phase='srcdoc-assigned';
@@ -2501,27 +2501,47 @@ window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'u
     view.insertAdjacentElement('afterend',cancel);
   });
  }
- function apply(){scheduled=false;offerCancel();
+ function apply(){
+  scheduled=false;
+  offerCancel();
   var tab=document.getElementById(selection==='done'?'tab-completed':'tab-tasks');
-  if(!tab||!tab.classList.contains('active'))return;
-  tab.querySelectorAll('[data-viewunfinished],.erhbc34-done-card[data-task-id]').forEach(function(row){
-    var id=savedId(row);if(!id)return;
-    var show=!currentIds||currentIds.has(id);
-    row.style.setProperty('display',show?'':'none',show?'':'important');
-    var next=row.nextElementSibling;
-    if(next&&next.classList.contains('erh-gv-dashboard-cancel'))next.style.display=show?'':'none';
+  if(selection==='assign'||!tab||!tab.classList.contains('active'))return;
+  // Original GV list: task cards, not BC33's data-viewunfinished buttons.
+  var holder=document.getElementById(selection==='done'?'completedTaskList':'taskList');
+  if(!holder)return;
+  var cards=holder.querySelectorAll('.task');
+  cards.forEach(function(card){
+   var id=selection==='done'?String(card.getAttribute('data-gv-done-id')||''):savedId(card);
+   if(!id){var m=String(card.textContent||'').match(/GV-[A-Z0-9-]{8,95}/i);id=m?m[0]:'';}
+   var show=!currentIds||!!(id&&currentIds.has(id));
+   card.style.setProperty('display',show?'':'none',show?'':'important');
   });
  }
  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
+ function visibleTab(name){
+  var n=document.getElementById('tab-'+name);
+  return !!(n&&n.classList.contains('active'));
+ }
+ function forceTab(name){
+  // GV has multiple inherited APP.openTab wrappers. Confirm the actual
+  // visible panel, rather than assuming that an openTab call succeeded.
+  document.querySelectorAll('#app > .tab').forEach(function(n){n.classList.toggle('active',n.id==='tab-'+name)});
+  document.querySelectorAll('nav.tabs [data-tab]').forEach(function(n){n.classList.toggle('active',n.dataset.tab===name)});
+  return visibleTab(name);
+ }
  function route(action,taskIds){
-  // Use the exact existing GV tab controller; do not route to BC33.
   if(typeof APP==='undefined'||!APP||typeof APP.openTab!=='function')return false;
-  if(action==='assign'){selection='assign';currentIds=null;APP.openTab('assign');return true;}
   selection=action;
   currentIds=Array.isArray(taskIds)?new Set(taskIds.map(String)):null;
-  APP.openTab(action==='done'?'completed':'tasks');schedule();
-  // GV list reads are asynchronous; render filters again once list data arrives.
-  setTimeout(schedule,150);setTimeout(schedule,750);
+  var name=action==='assign'?'assign':action==='done'?'completed':'tasks';
+  APP.openTab(name);
+  if(!visibleTab(name))forceTab(name);
+  if(!visibleTab(name))return false;
+  // Read asynchronously using the existing GV controller. Filter after its
+  // list is painted; no new API and no changes to BC33 or write paths.
+  schedule();
+  setTimeout(function(){if(selection===action&& !visibleTab(name))forceTab(name);schedule();},120);
+  setTimeout(function(){if(selection===action&& !visibleTab(name))forceTab(name);schedule();},650);
   return true;
  }
  window.addEventListener('message',function(e){
