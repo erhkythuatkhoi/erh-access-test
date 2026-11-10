@@ -2470,19 +2470,61 @@ window.addEventListener('message',function(e){
 </style>
 
 <script id="erh-dash6-gv-bridge-src">
+// GV statistic clicks stay inside the GV iframe; BC33 keeps its own existing router.
 window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'use strict';
- function route(a){
-  if(!window.APP||typeof APP.openTab!=='function'){return false;}
-  if(a==='assign'){APP.openTab('assign');return true;}
-  if(a==='priority'){
-   // Open the existing GV task list; never substitute a fabricated priority list.
-   APP.openTab('tasks');
-   var top=document.getElementById('tab-tasks');if(top)top.scrollIntoView({block:'start'});
-   return true;
-  }
-  return false;
+ var selection='assign',currentIds=null,scheduled=false;
+ var idPattern=/^GV-[A-Z0-9-]{8,95}$/i;
+ function savedId(node){
+  var id=String(node.getAttribute('data-viewunfinished')||node.getAttribute('data-task-id')||node.getAttribute('data-gvc72-task')||'').trim();
+  if(idPattern.test(id))return id;
+  var m=String(node.textContent||'').match(/GV-[A-Z0-9-]{8,95}/i);
+  return m?m[0]:'';
  }
- window.addEventListener('message',function(e){if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;route(e.data.action);});
+ function offerCancel(){
+  var list=document.getElementById('tab-tasks');if(!list)return;
+  var viewButtons=list.querySelectorAll('button[data-viewunfinished]');
+  viewButtons.forEach(function(view){
+    var id=savedId(view);if(!id||view.nextElementSibling?.classList.contains('erh-gv-dashboard-cancel'))return;
+    // Do not duplicate a native cancellation control on this task's own card.
+    var container=view.parentElement;
+    if(container&&container.querySelector('.erh-gvc72-card-action,[data-gvc72-task="'+id+'"]'))return;
+    var cancel=document.createElement('button');cancel.type='button';cancel.className='erh-gv-dashboard-cancel';
+    cancel.textContent='Hủy phiếu đã giao';
+    cancel.setAttribute('aria-label','Kiểm tra quyền hủy giao việc '+id);
+    cancel.style.cssText='margin:4px 7px 8px;padding:7px 10px;border:1px solid #dc9a8d;border-radius:7px;background:#fff6f3;color:#a13220;font:600 12px Arial,sans-serif;cursor:pointer';
+    cancel.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();
+      parent.postMessage({type:'ERH_GVC7_OPEN_CANCEL',taskId:id},'*');
+    });
+    view.insertAdjacentElement('afterend',cancel);
+  });
+ }
+ function apply(){scheduled=false;offerCancel();
+  var tab=document.getElementById(selection==='done'?'tab-completed':'tab-tasks');
+  if(!tab||!tab.classList.contains('active'))return;
+  tab.querySelectorAll('[data-viewunfinished],.erhbc34-done-card[data-task-id]').forEach(function(row){
+    var id=savedId(row);if(!id)return;
+    var show=!currentIds||currentIds.has(id);
+    row.style.setProperty('display',show?'':'none',show?'':'important');
+    var next=row.nextElementSibling;
+    if(next&&next.classList.contains('erh-gv-dashboard-cancel'))next.style.display=show?'':'none';
+  });
+ }
+ function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
+ function route(action,taskIds){
+  if(!window.APP||typeof APP.openTab!=='function')return;
+  if(action==='assign'){selection='assign';currentIds=null;APP.openTab('assign');return;}
+  selection=action;
+  currentIds=Array.isArray(taskIds)?new Set(taskIds.map(String)):null;
+  APP.openTab(action==='done'?'completed':'tasks');schedule();
+ }
+ window.addEventListener('message',function(e){
+  if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;
+  if(!['assign','notstarted','doing','overdue','done','priority'].includes(e.data.action))return;
+  route(e.data.action,e.data.taskIds);
+ });
+ var target=document.getElementById('tab-tasks')||document.body;
+ new MutationObserver(schedule).observe(target,{childList:true,subtree:true});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();<`+`/script>`;
 </script>
 <!-- ERH_GV_LAYOUT_CLOSED_TASK_STATS_20261109_V1 -->
@@ -2536,7 +2578,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
  }
  function gvCommand(action){
   var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
-  if(f&&f.contentWindow){f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:action},'*');return true;}
+  if(f&&f.contentWindow){f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:action,taskIds:groups&&groups[action]||null},'*');return true;}
   return false;
  }
  function frame(){return document.querySelector('#content iframe[data-erh-d15-module="BC33"]')}
@@ -2553,18 +2595,17 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    return;
   }
   if(status==='priority'){
-   // Use the original BC33 unfinished table, filtered by stored priority.
-   // Do not open GV's unfiltered task cards.
    if(moduleName()==='BC33'){send();return;}
-   pendingStatus='priority';goModule('report-work');return;
+   if(moduleName()==='GV'){gvCommand('priority');return;}
+   return;
   }
   if(status==='report'){
    if(moduleName()==='BC33'){send();return;}
    goModule('report-work');return;
   }
-  // All four statistics reuse the exact BC33 original table and its filters.
+  // Statistics operate inside the currently selected module; never change the sidebar menu.
   if(moduleName()==='BC33'){send();return;}
-  pendingStatus=status;goModule('report-work');
+  if(moduleName()==='GV'){gvCommand(status);return;}
  }
  function menuDefault(){
   var m=moduleName();
@@ -2621,7 +2662,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
  function routeChanged(){init();menuDefault()}
  document.addEventListener('load',function(e){
  var f=e.target;if(!f||f.tagName!=='IFRAME'||f.dataset.erhD15Module!=='GV')return;
- if(moduleName()==='GV')gvCommand('assign');
+ if(moduleName()==='GV')gvCommand(['notstarted','doing','overdue','done','priority'].includes(chosen)?chosen:'assign');
 },true);
  window.addEventListener('message',function(e){var f=frame();if(!f||e.source!==f.contentWindow||!e.data||e.data.type!=='ERH_T4_UI_PHASE_R4'||e.data.module!=='BC33')return;if(e.data.phase==='ready'||e.data.phase==='painted')send()});
  function start(){init();new MutationObserver(routeChanged).observe(document.body,{attributes:true,attributeFilter:['data-erh-d15-module']});}
