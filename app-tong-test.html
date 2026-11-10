@@ -1015,13 +1015,6 @@ window.ERH_T4_registerModule=function(id,adapter){
   if(!adapter||typeof adapter.mount!=='function')throw new Error('mount() required for '+id);
   ERH_T4_ADAPTERS[id]=adapter;
 };
-// GV statistics uses its OWN BC33 view instance. It must not share BC33 menu's mounted iframe.
-let ERH_GV_STATS_VIEW=null;
-window.ERH_GV_STATS_GET_EXISTING_VIEW=function(){
-  if(!ERH_GV_STATS_VIEW&&typeof window.ERH_BC33_makeView==='function')
-    ERH_GV_STATS_VIEW=window.ERH_BC33_makeView();
-  return ERH_GV_STATS_VIEW;
-};
 function ERH_T4_teardown(){
   if(!ERH_T4_ACTIVE)return;
   if(ERH_P3B_park(ERH_T4_ACTIVE)){
@@ -1077,7 +1070,6 @@ function ERH_T4_tryMount(page){
 
 function go(page){
   const perf07Same=state.page===page;
-  if(page!=='wo'&&typeof window.ERH_GV_STATS_BEFORE_ROUTE==='function')window.ERH_GV_STATS_BEFORE_ROUTE();
   ERH_T4_teardown();
   state.page=page;
   window.ERH_D15_TOP?.activate(page);
@@ -1514,8 +1506,6 @@ window.addEventListener('pagehide',function(){if(watcher)watcher.disconnect();})
 })();<\/script>`;
 const READ_METHODS=new Set(["ERH_BC33_manageCategory","ERH_BC33_saveNewDetail","ERH_BC33_taskFast","ERH_BC33_tasks","ERH_BC33_submitWithEvidence","ERH_BC33_uploadEvidence", "ERH_BC33_submit", "ERH_BC33_previewSubmit", "ERH_BC_V3_context", "APP_WEB_bootstrap", "APP_WEB_getAssignmentSources", "APP_GIAOVIEC_getMyTasks", "APP_BAOCAO_getMyHistory", "APP_BAOCAO_getMyDailyReport", "APP_DASHBOARD_getSummary", "APP_GIAOVIEC_V5_getSourceMap", "APP_GIAOVIEC_V5_getTaskForEdit", "APP_DIADIEM_getAll", "ERH_V8_myAssignments", "ERH_V9_getTask", "ERH_V9_canEditCatalog", "ERH_GV14_unassignedPlans", "ERH_GV14_runtimeReadOnlyV11410", "ERH_CTD_list", "ERH_CT_getDetails", "ERH_HUB_listTaskProgress", "ERH_BC33_boot", "ERH_BC33_task", "ERH_HUB_getWork", "ERH_HUB_getReport", "ERH_HUB_listRecent", "ERH_BC33_viewFile", "ERH_BC33_checkRequest", "ERH_BC_V3_pending", "ERH_BC33_listCompleted", "ERH_BC33_getCompleted", "ERH_BC33_viewCompleted", "ERH_BC33_daily"]);
 const BATCH_READ_METHODS=new Set(["ERH_BC33_taskFast","ERH_BC33_tasks","ERH_BC_V3_context", "ERH_BC33_boot", "ERH_BC33_task", "ERH_HUB_getWork", "ERH_HUB_getReport", "ERH_HUB_listRecent", "ERH_HUB_listTaskProgress", "ERH_BC33_listCompleted", "ERH_BC33_getCompleted", "ERH_BC33_viewCompleted", "APP_WEB_bootstrap", "APP_WEB_getAssignmentSources", "APP_GIAOVIEC_getMyTasks", "APP_BAOCAO_getMyHistory", "APP_DASHBOARD_getSummary", "APP_GIAOVIEC_V5_getSourceMap", "APP_DIADIEM_getAll", "ERH_V8_myAssignments", "ERH_GV14_unassignedPlans", "ERH_GV14_runtimeReadOnlyV11410"]);
-// Each caller owns one isolated BC33 iframe lifecycle; no cross-module unmount.
-function ERH_BC33_makeView(){
 var active=null;
 function unmount(){if(!active)return;active.cleanup();active.frame.src='about:blank';active.host.remove();active=null;}
 function mount(root,ctx){
@@ -1660,10 +1650,7 @@ function mount(root,ctx){
  function cleanup(){stopListViewportD13();clearSendingD8();alive=false;queue.length=0;readQueue.length=0;clearTimeout(readTimer);readTimer=null;clearTimeout(readFlightTimer);readFlightTimer=null;pending.forEach(function(done){done(false,null,'Đã đóng giao diện.');});pending.clear();window.removeEventListener('message',listener);}
  active={host,frame,listener,cleanup};window.addEventListener('message',listener);host.appendChild(notice);host.appendChild(frame);root.appendChild(host);frame.srcdoc=DOC.replace(/<\/head>/i,'<style id="erh-two-module-nav-hide-bc33">nav.tabs{display:none!important}</style></head>').replace(/<\/body>/i,ERH_BC33_DASH6_BRIDGE+'</body>');return {unmount};
 }
-return {mount,unmount};
-}
-window.ERH_BC33_makeView=ERH_BC33_makeView;
-window.ERH_T4_registerModule('BC33',ERH_BC33_makeView());
+window.ERH_T4_registerModule('BC33',{mount,unmount});
 
 window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 Version26: 52/52 source text LF verified 22/10/2026',readConnected:true,functionTestsPending:true};
 })();</script>
@@ -2484,41 +2471,58 @@ window.addEventListener('message',function(e){
 
 <script id="erh-dash6-gv-bridge-src">
 window.ERH_DASH6_GV_BRIDGE = `<scr`+`ipt id="erh-dash6-gv-bridge">(function(){'use strict';
- function route(a){
-  if(!window.APP||typeof APP.openTab!=='function'){return false;}
-  if(a==='assign'){APP.openTab('assign');return true;}
-  if(a==='priority'){
-   // Open the existing GV task list; never substitute a fabricated priority list.
-   APP.openTab('tasks');
-   var top=document.getElementById('tab-tasks');if(top)top.scrollIntoView({block:'start'});
-   return true;
-  }
-  return false;
+ // Route GV statistics only to GV's own existing task/completed views.
+ var chosen='assign',taskIds=null,observed=null,observer=null;
+ function apply(){
+  if(!taskIds||chosen==='assign')return;
+  var pane=document.getElementById(chosen==='done'?'tab-completed':'tab-tasks');
+  if(!pane)return;
+  var list=pane.querySelector(chosen==='done'?'#erhbc33doneRows':'#taskList');
+  if(!list)return;
+  var cards=chosen==='done'?list.querySelectorAll('.card'):list.querySelectorAll('.task');
+  cards.forEach(function(card){
+   var id='';
+   if(chosen==='done'){
+    var btn=card.querySelector('[data-viewtask]');id=btn?btn.getAttribute('data-viewtask'):'';
+   }else{
+    var badge=card.querySelector('.badge');id=badge?badge.textContent.trim():'';
+   }
+   card.style.display=id&&taskIds.has(String(id))?'':'none';
+  });
  }
- window.addEventListener('message',function(e){if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;route(e.data.action);});
+ function watch(){
+  var pane=document.getElementById(chosen==='done'?'tab-completed':'tab-tasks');
+  if(!pane)return;
+  if(observed!==pane){
+   if(observer)observer.disconnect();observed=pane;
+   observer=new MutationObserver(apply);
+   observer.observe(pane,{childList:true,subtree:true});
+  }
+  apply();
+ }
+ function route(a,ids){
+  if(!window.APP||typeof APP.openTab!=='function')return false;
+  if(a==='assign'){
+   if(observer)observer.disconnect();observer=null;observed=null;
+   chosen='assign';taskIds=null;APP.openTab('assign');return true;
+  }
+  if(!['notstarted','doing','overdue','done','priority'].includes(a))return false;
+  chosen=a;taskIds=Array.isArray(ids)?new Set(ids.map(String)):null;
+  var pane=a==='done'?'completed':'tasks';
+  var current=document.getElementById('tab-'+pane);
+  // A new statistic in the same GV list only changes the local filter, not the route.
+  if(!current||!current.classList.contains('active'))APP.openTab(pane);
+  watch();
+  return true;
+ }
+ window.addEventListener('message',function(e){
+  if(e.source!==parent||!e.data||e.data.type!=='ERH_DASH6_GV_VIEW')return;
+  route(e.data.action,e.data.taskIds);
+ });
 })();<`+`/script>`;
 </script>
 <!-- ERH_GV_LAYOUT_CLOSED_TASK_STATS_20261109_V1 -->
 <!-- ERH_BC33_SCRIPT_RECOVERY_20261109_V1 -->
-<style id="erh-gv-reuse-existing-bc33-table-style">
-body[data-erh-d15-module="GV"] #content>#erh-gv-stats-reuse{flex:1 1 auto;min-height:0;height:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
-body[data-erh-d15-module="GV"] #erh-gv-stats-reuse>.erh-bc33-original-v17{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;height:100%;max-height:100%;overflow:hidden}
-body[data-erh-d15-module="GV"] #erh-gv-stats-reuse iframe[data-erh-d15-module="BC33"]{flex:1 1 auto;display:block;min-height:0;height:100%;max-height:100%;width:100%;border:0}
-</style>
-<style id="erh-gv-stats-single-view-20261110">
-/* Override the earlier host viewport display:flex!important only while a GV list is selected. */
-body[data-erh-d15-module="GV"] #content > .erh-gv-stats-hidden {
-  display:none!important;
-}
-body[data-erh-d15-module="GV"] #content > #erh-gv-stats-reuse:not(.erh-gv-stats-hidden){
-  display:flex!important;flex:1 1 0%!important;min-height:0!important;
-  height:100%!important;max-height:100%!important;overflow:hidden!important;
-}
-body[data-erh-d15-module="GV"] #erh-gv-stats-reuse > .erh-bc33-original-v17{
-  display:flex!important;flex:1 1 0%!important;min-height:0!important;
-  height:100%!important;overflow:hidden!important;
-}
-</style>
 <!-- ERH_DASH6_UNIFIED_20261109: host-only UI router; existing GV/BC33 iframe views. -->
 <style id="erh-dash6-style">
 #erh-dash6{display:none;position:sticky;top:48px;z-index:19;margin:0;padding:7px 14px 6px;background:#f3f8fc;border-bottom:1px solid #d9e8f3;box-shadow:0 3px 8px #17365312;box-sizing:border-box}
@@ -2566,47 +2570,9 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!node){note('Không tìm thấy menu '+page);return false;}
   node.click();return true;
  }
- var gvStatHost=null,gvHidden=[],gvMounted=false,gvStatAction='';
- function gvStatStop(){
-  if(gvStatHost){
-   // Never unmount another BC33 view that the native menu may have mounted meanwhile.
-   if(moduleName()==='GV'&&gvMounted){var a=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();try{a?.unmount?.()}catch(_){} }
-   gvStatHost.remove();gvStatHost=null;
-  }
-  gvMounted=false;window.ERH_GV_STATS_EMBED_ACTIVE=false;
-  gvHidden.forEach(function(x){if(x.el.isConnected){x.el.classList.remove('erh-gv-stats-hidden');x.el.style.display=x.display}});gvHidden=[];
- }
- function gvStatOpen(status){
-  if(moduleName()!=='GV')return false;
-  var base=document.querySelector('#content');if(!base)return false;
-  var adapter=window.ERH_GV_STATS_GET_EXISTING_VIEW?.();if(!adapter)return false;
-  gvStatAction=status;
-  if(gvStatHost&&!gvStatHost.isConnected)gvStatStop();
-  if(!gvStatHost){
-   gvStatHost=document.createElement('section');gvStatHost.id='erh-gv-stats-reuse';
-   gvStatHost.style.cssText='display:flex;flex:1 1 auto;flex-direction:column;height:100%;min-height:0;width:100%;overflow:hidden';
-   Array.from(base.children).forEach(function(n){
-    if(n.id==='erh-gv-stats-reuse')return;
-    gvHidden.push({el:n,display:n.style.display});n.classList.add('erh-gv-stats-hidden');n.style.display='none';
-   });
-   base.appendChild(gvStatHost);
-   var ctx={getToken:function(){return auth()},getDisplayActor:function(){return {code:'',name:''}}};
-   try{window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
-   catch(err){note('Không mở được bảng chi tiết: '+text(err.message||err));gvStatStop();return false}
-   finally{window.ERH_GV_STATS_EMBED_ACTIVE=false}
-  }
-  function sendGVStat(){
-    if(moduleName()!=='GV'||!gvStatHost||!gvStatHost.isConnected||gvStatAction!==status)return;
-    var f=gvStatHost.querySelector('iframe[data-erh-d15-module="BC33"]');
-    if(f&&f.contentWindow)f.contentWindow.postMessage({type:'ERH_DASH6_BC33_VIEW',status:status,taskIds:groups&&groups[status]||null},'*');
-  }
-  sendGVStat();setTimeout(sendGVStat,300);setTimeout(sendGVStat,1100);
-  return true;
- }
- window.ERH_GV_STATS_BEFORE_ROUTE=function(){if(gvStatHost)gvStatStop()};
  function gvCommand(action){
   var f=document.querySelector('#content iframe[data-erh-d15-module="GV"]');
-  if(f&&f.contentWindow){f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:action},'*');return true;}
+  if(f&&f.contentWindow){f.contentWindow.postMessage({type:'ERH_DASH6_GV_VIEW',action:action,taskIds:groups&&groups[action]||null},'*');return true;}
   return false;
  }
  function frame(){return document.querySelector('#content iframe[data-erh-d15-module="BC33"]')}
@@ -2618,22 +2584,22 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
   if(!labels.some(function(v){return v[0]===status}))return;
   chosen=status;display();note('');
   if(status==='gv'){
-   if(moduleName()==='GV'){gvStatStop();return;}
+   if(moduleName()==='GV'){gvCommand('assign');return;}
    pendingStatus='gv';goModule('wo');
    return;
   }
   if(status==='priority'){
    if(moduleName()==='BC33'){send();return;}
-   if(moduleName()==='GV'){gvStatOpen('priority');return;}
+   if(moduleName()==='GV'){gvCommand(status);return;}
    return;
   }
   if(status==='report'){
    if(moduleName()==='BC33'){send();return;}
    goModule('report-work');return;
   }
-  // Statistics operate inside the currently selected module; never change the sidebar menu.
   if(moduleName()==='BC33'){send();return;}
-  if(moduleName()==='GV'){gvStatOpen(status);return;}
+  // GV statistics stay inside GV; never activate the BC33 menu.
+  if(moduleName()==='GV'){gvCommand(status);return;}
  }
  function menuDefault(){
   var m=moduleName();
@@ -2641,7 +2607,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    if(old&&old.length===6){var endButtons=m==='GV'?[['priority','Việc ưu tiên:'],['gv','GIAO VIỆC']]:[['priority','Việc ưu tiên:'],['report','BÁO CÁO CÔNG VIỆC']];
     for(var i=0;i<2;i++){old[4+i].dataset.status=endButtons[i][0];old[4+i].querySelector('span').textContent=endButtons[i][1];}}
   }
-  if(m==='GV')chosen='gv';else if(m==='BC33')chosen=pendingStatus||'report';else chosen='';pendingStatus='';display();if(m==='BC33')send();if(m==='GV'){gvStatStop();gvCommand('assign')}if(m==='GV'||m==='BC33')refresh(false)
+  if(m==='GV')chosen='gv';else if(m==='BC33')chosen=pendingStatus||'report';else chosen='';pendingStatus='';display();if(m==='BC33')send();if(m==='GV'){gvCommand('assign')}if(m==='GV'||m==='BC33')refresh(false)
  }
  function consume(result,session){if(auth()!==session)return;var rs=result&&result.results;
   var a=Array.isArray(rs)&&rs.find(function(x){return x.id==='901'}),b=Array.isArray(rs)&&rs.find(function(x){return x.id==='902'});
@@ -2665,7 +2631,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    var key=detailId ? text(line.taskId)+'|'+detailId : text(line.reportId)+'|'+text(line.lineId);
    if(key&&key!=='|')completedDetails.add(key);
   });
-  groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:completedDetails.size,priority:next.priority.length};last=Date.now();display();send();if(moduleName()==='GV'&&gvStatHost&&gvStatAction)gvStatOpen(gvStatAction);note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
+  groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:completedDetails.size,priority:next.priority.length};last=Date.now();display();send();if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvCommand(chosen);note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
  }
  function refresh(force){if(loading||!auth())return;var session=auth();if(!session){groups=null;counts=null;display();return}
   if(token!==session){token=session;groups=null;counts=null;last=0;display()}
