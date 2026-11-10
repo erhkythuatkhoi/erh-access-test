@@ -1016,6 +1016,8 @@ window.ERH_T4_registerModule=function(id,adapter){
   ERH_T4_ADAPTERS[id]=adapter;
 };
 window.ERH_GV_STATS_GET_EXISTING_VIEW=function(){return ERH_T4_ADAPTERS.BC33||null};
+// When GV borrows the singleton BC33 adapter, its parked BC33 iframe must not be resumed later.
+window.ERH_GV_STATS_DISCARD_PARKED_BC33=function(){if(ERH_P3B_PARKED.BC33)ERH_P3B_discardOne('BC33')};
 function ERH_T4_teardown(){
   if(!ERH_T4_ACTIVE)return;
   if(ERH_P3B_park(ERH_T4_ACTIVE)){
@@ -2580,7 +2582,7 @@ body[data-erh-d15-module="GV"] #erh-dash6,body[data-erh-d15-module="BC33"] #erh-
    });
    base.appendChild(gvStatHost);
    var ctx={getToken:function(){return auth()},getDisplayActor:function(){return {code:'',name:''}}};
-   try{window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
+   try{window.ERH_GV_STATS_DISCARD_PARKED_BC33?.();window.ERH_GV_STATS_EMBED_ACTIVE=true;adapter.mount(gvStatHost,ctx);gvMounted=true}
    catch(err){note('Không mở được bảng chi tiết: '+text(err.message||err));gvStatStop();return false}
    finally{window.ERH_GV_STATS_EMBED_ACTIVE=false}
   }
