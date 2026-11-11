@@ -2939,7 +2939,7 @@ window.ERH_T4_GV_HELP_V21=`<style id="erh-help21-style">
 .erh-help21-open{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:6px 12px!important;border:1px solid #bfcede!important;border-radius:8px!important;background:#fff!important;color:#184772!important;font:600 13px Arial,sans-serif!important;letter-spacing:normal!important;text-transform:none!important;white-space:nowrap;cursor:pointer;box-sizing:border-box}
 .erh-help21-open:hover{background:#eaf4ff!important;border-color:#4f99d8!important}
 .erh-help21-open:focus-visible,.erh-help21-close:focus-visible{outline:3px solid #1581d4;outline-offset:2px}
-#erh-help21-row-GV{display:flex;justify-content:flex-end;align-items:center;margin:0 0 7px;min-height:34px}
+#tab-assign #gv5SourceWrap .gv5-source-title{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:nowrap!important;min-width:0}#tab-assign #gv5SourceWrap .gv5-source-title .erh-help21-open{flex:0 0 auto!important}
 #erh-help21-modal[hidden]{display:none!important}
 #erh-help21-modal{position:fixed;inset:0;z-index:21010;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(15,23,42,.5);box-sizing:border-box}
 #erh-help21-modal .erh-help21-dialog{width:min(640px,100%);max-height:calc(100vh - 28px);overflow:auto;box-sizing:border-box;padding:18px 20px;background:#fff;color:#24364c;border-radius:12px;box-shadow:0 12px 44px #0003;font:14px/1.6 Arial,sans-serif}
@@ -2961,10 +2961,10 @@ function byId(id){return document.getElementById(id);}
 function closeHelp(){var modal=byId(modalId);if(!modal||modal.hidden)return;modal.hidden=true;byId(openId)?.focus();}
 function showHelp(){var modal=byId(modalId);if(modal){modal.hidden=false;byId('erh-help21-close')?.focus();}}
 function ensureHelp(){
- var anchor=moduleName==='GV'?document.querySelector('#tab-assign .gv4-center-body'):document.querySelector('#workspace > section.box:first-child > h2.section-heading');
+ var anchor=moduleName==='GV'?document.querySelector('#tab-assign #gv5SourceWrap .gv5-source-title'):document.querySelector('#workspace > section.box:first-child > h2.section-heading');
  if(!anchor||byId(openId))return;
  var btn=document.createElement('button');btn.type='button';btn.id=openId;btn.className='erh-help21-open';btn.textContent='? Hướng dẫn';btn.setAttribute('aria-haspopup','dialog');
- if(moduleName==='GV'){var line=document.createElement('div');line.id='erh-help21-row-GV';line.appendChild(btn);anchor.insertBefore(line,anchor.firstChild);}
+ if(moduleName==='GV'){anchor.appendChild(btn);}
  else{anchor.appendChild(btn);}
  btn.addEventListener('click',showHelp);
  if(!byId(modalId)){var modal=document.createElement('div');modal.id=modalId;modal.hidden=true;modal.innerHTML=modalContent;document.body.appendChild(modal);
