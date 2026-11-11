@@ -2574,6 +2574,84 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
  var labels=[['notstarted','Chưa thực hiện:'],['doing','Đang thực hiện:'],['overdue','Quá hạn:'],['done','Đã hoàn thành:'],['priority','Việc ưu tiên:'],['gv','GIAO VIỆC'],['report','BÁO CÁO CÔNG VIỆC']];
  var root=null,counts=null,groups=null,last=0,token='',loading=false,chosen='',pendingStatus='';
  var gvTasks=null; // GV-only detail snapshot from existing batch 901; BC33 code unchanged.
+ // GV display enrichment only. Batch 902 holds committed BC33 detail lines; taskFast
+ // returns the assigned details when the 901 summary does not contain them.
+ var gvReportedLines=[],gvDetailCache=new Map(),gvDetailQueue=[],gvDetailPending=new Set(),gvDetailBusy=false,gvDetailGeneration=0;
+ function gvDetailLines(task){
+   var t=task||{}, id=text(t.id||t.taskId), out=[];
+   var source=Array.isArray(t.details)&&t.details.length?t.details:gvDetailCache.get(id);
+   if(Array.isArray(source))source.forEach(function(d){
+     var name=text(d&&(d.name||d.title||d.detail||d.description));if(!name)return;
+     var assigned=Number(d.assigned),unit=text(d.unit),norm=Number(d.normMinutes);
+     var desc=name;
+     if(Number.isFinite(assigned)&&assigned>0)desc+=' · '+assigned+(unit?' '+unit:'');
+     if(Number.isFinite(norm)&&norm>0)desc+=' · '+norm+' phút định mức';
+     out.push({key:text(d.id||d.detailId||d.catalogId),name:name,description:desc});
+   });
+   // Reuse the report lines already fetched for the statistics. They were displayed
+   // under work names in the old, passed BC33 table. Do not change BC33's code.
+   var reports=gvReportedLines.filter(function(r){return r&&text(r.taskId)===id&&text(r.detail)});
+   var byKey=new Map();
+   reports.forEach(function(r){
+     var key=text(r.detailId)||text(r.detail).toLocaleLowerCase('vi');
+     var v=byKey.get(key);
+     if(!v){v={key:key,name:text(r.detail),qty:0,minutes:0,unit:text(r.unit)};byKey.set(key,v);}
+     var qty=Number(r.qty),minutes=Number(r.minutes);
+     if(Number.isFinite(qty))v.qty+=qty;if(Number.isFinite(minutes))v.minutes+=minutes;
+   });
+   byKey.forEach(function(r){
+     var match=out.find(function(d){return d.key&&d.key===r.key||d.name.toLocaleLowerCase('vi')===r.name.toLocaleLowerCase('vi')});
+     var value='Đã báo cáo: '+r.qty+(r.unit?' '+r.unit:'')+' · '+r.minutes+' phút';
+     if(match)match.description+=' · '+value;
+     else out.push({key:r.key,name:r.name,description:r.name+' · '+value});
+   });
+   return out;
+ }
+ function gvPaintDetails(node,task){
+   if(!node)return;
+   var lines=gvDetailLines(task);
+   node.replaceChildren();
+   if(lines.length){lines.forEach(function(d){var line=document.createElement('div');line.textContent=d.description;line.style.cssText='line-height:1.45;margin-top:3px;white-space:normal;overflow-wrap:anywhere';node.appendChild(line)});return;}
+   var taskId=text(task.id||task.taskId);
+   var waiting=gvDetailPending.has(taskId);
+   node.textContent=waiting?'Đang tải chi tiết công việc…':'Chưa có chi tiết trong dữ liệu tổng hợp';
+ }
+ function gvQueueMissingDetail(task,node){
+   var id=text(task.id||task.taskId);if(!id||!/^GV-[A-Z0-9-]{8,95}$/i.test(id))return;
+   if(Array.isArray(task.details)&&task.details.length)return;
+   if(gvDetailCache.has(id)||gvDetailPending.has(id))return;
+   // For completed work, committed detail lines are already present in batch 902.
+   if(gvReportedLines.some(function(r){return r&&text(r.taskId)===id&&text(r.detail)}))return;
+   gvDetailPending.add(id);gvDetailQueue.push({task:task,id:id,node:node,session:auth(),generation:gvDetailGeneration});gvPaintDetails(node,task);
+ }
+ function gvLoadNextDetails(){
+   if(gvDetailBusy||!gvDetailQueue.length)return;
+   var session=auth(),generation=gvDetailGeneration;
+   if(!session){gvDetailQueue=[];gvDetailPending.clear();return;}
+   var batch=gvDetailQueue.splice(0,3).filter(function(x){return x.session===session&&x.generation===generation});
+   if(!batch.length){gvLoadNextDetails();return;}
+   if(!window.google||!google.script||!google.script.run){batch.forEach(function(x){gvDetailPending.delete(x.id)});return;}
+   gvDetailBusy=true;
+   function finish(response){
+     gvDetailBusy=false;
+     if(auth()!==session||generation!==gvDetailGeneration){gvLoadNextDetails();return;}
+     var results=response&&Array.isArray(response.results)?response.results:[];
+     batch.forEach(function(x,i){
+       gvDetailPending.delete(x.id);
+       var item=results.find(function(r){return text(r&&r.id)===text(i+1)});
+       var result=item&&item.ok&&item.result;
+       // taskFast result is {task:{...},details:[{name,unit,assigned,normMinutes,...}]}.
+       if(result&&Array.isArray(result.details))gvDetailCache.set(x.id,result.details);
+       document.querySelectorAll('#erh-gv-stats-detail [data-gv-detail-id]').forEach(function(n){if(n.getAttribute('data-gv-detail-id')===x.id)gvPaintDetails(n,x.task)});
+     });
+     gvLoadNextDetails();
+   }
+   try{
+     var jobs=batch.map(function(x,i){return {id:String(i+1),method:'ERH_BC33_taskFast',args:[session,x.id]}});
+     google.script.run.withSuccessHandler(finish).withFailureHandler(function(){finish(null)}).ERH_T4_BC33_originalBatch(jobs,session);
+   }catch(_error){finish(null)}
+ }
+
  function byId(x){return document.getElementById(x)}
  function text(x){return String(x==null?'':x).trim()}
  function normalize(x){return text(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[Đđ]/g,'D').replace(/[_-]/g,' ').replace(/\s+/g,' ').toUpperCase()}
@@ -2670,13 +2748,13 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
    visible.forEach(function(t,i){var tr=document.createElement('tr');
     var values=[String(i+1),t.project,t.category,t.system,null,dateText(t.assignDate),dateText(status==='done'?t.completedDate:t.dueDate),t.assignee,status==='overdue'?'Quá hạn':status==='priority'?t.priority:status==='notstarted'?'Chưa thực hiện':status==='doing'?'Đang thực hiện':'Đã hoàn thành'];
     values.forEach(function(v,k){var td=document.createElement('td');td.style.cssText='padding:8px 7px;border-bottom:1px solid #e0e9f1;vertical-align:top;overflow-wrap:anywhere';
-     if(k===4){var bold=document.createElement('strong');bold.textContent=t.name||'—';td.appendChild(bold);var note=document.createElement('div');note.style.cssText='font-size:11px;color:#6a7e8e;margin-top:4px';note.textContent=t.details.map(function(d){return text(d&&(d.name||d.title||d.detail));}).filter(Boolean).join(' · ');td.appendChild(note);var actions=document.createElement('span');actions.style.cssText='display:inline-flex;gap:10px;margin-left:10px';var view=document.createElement('button');view.textContent='Xem';view.type='button';view.style.cssText='cursor:pointer;color:#0865ac;border:none;background:transparent;text-decoration:underline';view.onclick=function(){openPassedGvView(t.id)};actions.appendChild(view);
+     if(k===4){var bold=document.createElement('strong');bold.textContent=t.name||'—';td.appendChild(bold);var note=document.createElement('div');note.style.cssText='font-size:11px;color:#6a7e8e;margin-top:4px';td.appendChild(note);note.setAttribute('data-gv-detail-id',t.id);gvPaintDetails(note,t);gvQueueMissingDetail(t,note);var actions=document.createElement('span');actions.style.cssText='display:inline-flex;gap:10px;margin-left:10px';var view=document.createElement('button');view.textContent='Xem';view.type='button';view.style.cssText='cursor:pointer;color:#0865ac;border:none;background:transparent;text-decoration:underline';view.onclick=function(){openPassedGvView(t.id)};actions.appendChild(view);
       if(status!=='done'&&/^GV-[A-Z0-9-]{8,95}$/i.test(t.id)) {var cancel=document.createElement('button');cancel.textContent='Hủy';cancel.type='button';cancel.style.cssText='cursor:pointer;color:#ad2921;border:1px solid #e2afa8;background:white;border-radius:4px;padding:2px 5px';cancel.onclick=function(){gvCommand('cancel',t.id)};actions.appendChild(cancel)}td.appendChild(actions);
      }else{td.textContent=v||'—'}tr.appendChild(td);});tbody.appendChild(tr);
    });footer.textContent='Hiển thị '+visible.length+' / '+items.length+' công việc trong nhóm '+names[status]+'.';
    if(!visible.length){var tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=9;td.textContent='Không có công việc phù hợp';td.style.cssText='padding:20px;text-align:center;color:#7b8d9f';tr.appendChild(td);tbody.appendChild(tr);}
   }
-  draw();
+  draw();gvLoadNextDetails();
  }
 
  function select(status){
@@ -2734,11 +2812,12 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
    var key=detailId ? text(line.taskId)+'|'+detailId : text(line.reportId)+'|'+text(line.lineId);
    if(key&&key!=='|')completedDetails.add(key);
   });
-  gvTasks=a.result.tasks;groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:completedDetails.size,priority:next.priority.length};last=Date.now();display();send();if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvView(chosen);note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
+  gvReportedLines=b.result.reportedLines;gvTasks=a.result.tasks;groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:completedDetails.size,priority:next.priority.length};last=Date.now();display();send();if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvView(chosen);note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
  }
  function refresh(force){if(loading||!auth())return;var session=auth();if(!session){groups=null;counts=null;display();return}
-  if(token!==session){token=session;groups=null;counts=null;gvTasks=null;last=0;display()}
-  if(!force&&counts)return;
+  if(token!==session){token=session;groups=null;counts=null;gvTasks=null;gvReportedLines=[];gvDetailCache.clear();gvDetailQueue=[];gvDetailPending.clear();gvDetailGeneration++;last=0;display()}
+   if(!force&&counts)return;
+   if(force){gvDetailCache.clear();gvDetailQueue=[];gvDetailPending.clear();gvDetailGeneration++;}
   if(!window.google||!google.script||!google.script.run){note('Chưa kết nối dữ liệu thống kê');return}
   loading=true;note('Đang cập nhật thống kê…');
   var jobs=[{id:'901',method:'ERH_BC33_boot',args:[]},{id:'902',method:'ERH_BC33_getCompleted',args:[]}];
