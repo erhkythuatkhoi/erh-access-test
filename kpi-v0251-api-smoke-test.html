@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ERH KPI V0.25.1 - API smoke test chỉ đọc</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#1b344f;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}header{background:#133555;color:#fff;padding:18px 14px}main{max-width:850px;margin:20px auto;padding:0 14px}h1{font-size:21px;margin:0}.sub{font-size:13px;color:#cbddeb;margin:7px 0 0}.card{background:#fff;border:1px solid #d8e3ed;border-radius:10px;padding:18px;margin-bottom:12px}.notice{border-left:4px solid #ae7d24;background:#fff8e8;padding:11px 14px;margin:10px 0;font-size:14px}button{background:#154e77;color:white;border:0;border-radius:7px;padding:11px 15px;cursor:pointer;margin:4px 5px 4px 0;font-weight:600}button:disabled{opacity:.52;cursor:not-allowed}.ghost{background:#e1ebf4;color:#153e61}.status{font-size:14px}.good{color:#157242}.bad{color:#bb3232}.muted{color:#526981;font-size:13px}pre{padding:13px;background:#edf3f8;border-radius:7px;overflow-wrap:anywhere;white-space:pre-wrap;min-height:45px;font-size:12px}.result{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:9px;border-bottom:1px solid #dce6ee}th{background:#ecf3f9}iframe{position:absolute;left:-9999px;top:0;width:2px;height:2px;border:0}table{width:100%}@media(max-width:600px){.card{padding:12px}h1{font-size:18px}td,th{padding:6px;font-size:11px}}
+</style></head>
+<body><header><div style="max-width:850px;margin:auto"><h1>ERH KPI V0.25.1 · Kiểm thử API TEST</h1><p class="sub">6 route · Không đăng nhập · Không nhập mật khẩu · Không ghi CSDL</p></div></header>
+<main>
+<div class="card">
+ <div class="notice"><strong>An toàn:</strong> Hai API đọc dùng token giả cố định và phải bị từ chối với <code>SESSION_INVALID</code>. Bốn API ghi gửi <strong>mảng tham số rỗng</strong>, phải bị từ chối ngay với <code>INVALID_ARGUMENTS</code>, trước khi có thể gọi nghiệp vụ ghi. Không gửi token thật và không yêu cầu mở khóa ghi.</div>
+ <p class="muted">Chỉ kiểm thử sau khi Deploy Web App TEST chứa đủ 6 route. Trang phải được mở từ <code>erhkythuatkhoi.github.io</code> để nhận phản hồi đúng nguồn. Không mở trang HTML bằng đường dẫn file trên máy tính.</p>
+ <button id="all">Kiểm tra PING + 6 route</button><button class="ghost" id="copy">Sao chép kết quả</button><button class="ghost" id="clear">Xóa kết quả</button>
+ <p id="status" class="status">Chưa chạy.</p>
+ <div style="overflow:auto"><table class="result"><thead><tr><th>Phép thử</th><th>Phản hồi</th><th>Kết quả</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+<div class="card"><strong>Log an toàn để gửi hỗ trợ</strong><pre id="result">[]</pre></div>
+<div id="sink" hidden></div>
+</main>
+<script>
+(()=>{'use strict';
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyOfAesc3_-60IPPFmT78FFEWWSWMa8SHGbbWiCS36ZnftKqv_FdkHVIVHlljjTtdq5rw/exec';
+const INVALID_TOKEN='KPI_V025_FAKE_SESSION_DO_NOT_USE_000001';
+const TESTS=[
+ {name:'PING',method:'ERH_P2F1020_ping',args:[],expected:'OK'},
+ {name:'ERH_KPI_V025_getWork',method:'ERH_KPI_V025_getWork',args:[INVALID_TOKEN,'BDSEH_0340','202611-T2'],expected:'SESSION_INVALID'},
+ {name:'ERH_KPI_V025_getManaged',method:'ERH_KPI_V025_getManaged',args:[INVALID_TOKEN,'BDSEH_0196','202611-T2'],expected:'SESSION_INVALID'},
+ {name:'ERH_KPI_V025_selfAssign',method:'ERH_KPI_V025_selfAssign',args:[],expected:'INVALID_ARGUMENTS'},
+ {name:'ERH_KPI_V025_selfReport',method:'ERH_KPI_V025_selfReport',args:[],expected:'INVALID_ARGUMENTS'},
+ {name:'ERH_KPI_V025_managerEdit',method:'ERH_KPI_V025_managerEdit',args:[],expected:'INVALID_ARGUMENTS'},
+ {name:'ERH_KPI_V025_managerApprove',method:'ERH_KPI_V025_managerApprove',args:[],expected:'INVALID_ARGUMENTS'}
+];
+const $=id=>document.getElementById(id),result=$('result'),status=$('status');let results=[],running=false;
+function n40(){const arr=new Uint8Array(20);crypto.getRandomValues(arr);return Array.from(arr,v=>v.toString(16).padStart(2,'0')).join('')}
+function secureOrigin(origin){try{const u=new URL(origin);return u.protocol==='https:'&&!u.port&&(u.hostname==='script.google.com'||u.hostname==='script.googleusercontent.com'||u.hostname.endsWith('.script.googleusercontent.com')||u.hostname.endsWith('-script.googleusercontent.com'));}catch(e){return false}}
+function draw(){result.textContent=JSON.stringify(results,null,2);const body=$('rows');body.replaceChildren();for(const r of results){let tr=document.createElement('tr');for(const t of [r.test,r.errorCode||r.serverVersion||r.status,r.pass?'PASS':'FAIL']){let td=document.createElement('td');td.textContent=t;if(t==='PASS')td.className='good';if(t==='FAIL')td.className='bad';tr.append(td)}body.append(tr)}}
+function call(t){return new Promise(resolve=>{const nonce=n40(),frame=document.createElement('iframe'),form=document.createElement('form'),target='kpi_test_'+nonce;frame.name=target;frame.title='ERH KPI API CHECK';form.method='POST';form.action=ENDPOINT;form.target=target;form.style.display='none';for(const [k,v] of Object.entries({nonce,method:t.method,args:JSON.stringify(t.args)})){const input=document.createElement('input');input.type='hidden';input.name=k;input.value=v;form.append(input)}
+ let ended=false,received=0,loads=0,t0=performance.now();let timer;
+ function finish(reason,d){if(ended)return;ended=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();frame.remove();const ok=d?.ok===true;const errorCode=typeof d?.error==='string'?d.error:null;const serverVersion=t.name==='PING'&&typeof d?.value?.version==='string'?d.value.version:null;const pass=reason==='RESPONSE'&&(t.expected==='OK'?ok&&/^P2F\./.test(serverVersion):!ok&&errorCode===t.expected);resolve({test:t.name,status:reason,serverOk:ok,errorCode,serverVersion,expected:t.expected,pass,elapsedSeconds:Math.round((performance.now()-t0)/1000),receivedTrustedMessages:received,iframeLoads:loads});}
+ function onMessage(ev){if(!secureOrigin(ev.origin))return;let d=ev.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){return}}if(!d||typeof d!=='object'||Array.isArray(d)||d.nonce!==nonce||d.app!=='ERH_APP_TOTAL_PAGES_P2F1020'||typeof d.ok!=='boolean')return;received++;finish('RESPONSE',d)}
+ window.addEventListener('message',onMessage);$('sink').append(frame,form);frame.addEventListener('load',()=>{loads++});timer=setTimeout(()=>finish('TIMEOUT',null),30000);try{form.submit()}catch(e){finish('SUBMIT_ERROR',null)}})}
+$('all').addEventListener('click',async()=>{if(running)return;running=true;$('all').disabled=true;$('clear').disabled=true;results=[];draw();try{for(let i=0;i<TESTS.length;i++){status.textContent='Đang kiểm tra '+(i+1)+' / '+TESTS.length+': '+TESTS[i].name;const r=await call(TESTS[i]);results.push(r);draw();}const pass=results.filter(x=>x.pass).length;status.textContent='Hoàn thành '+pass+'/'+TESTS.length+' PASS. '+(pass===TESTS.length?'Các route phản hồi đúng phép thử không có phiên thật.':'Có phép thử FAIL; không mở quyền ghi.');status.className='status '+(pass===TESTS.length?'good':'bad');}finally{running=false;$('all').disabled=false;$('clear').disabled=false}});
+$('copy').addEventListener('click',()=>{navigator.clipboard.writeText(JSON.stringify(results,null,2)).then(()=>{status.textContent='Đã sao chép Log không chứa token.'}).catch(()=>{status.textContent='Hãy sao chép thủ công nội dung Log.'})});
+$('clear').addEventListener('click',()=>{if(running)return;results=[];draw();status.textContent='Đã xóa kết quả.'});draw();
+})();
+</script></body></html>
