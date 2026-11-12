@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0873c3"><title>Đang mở ERH APP TỔNG</title>
+<style>body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;font:500 16px/1.5 system-ui,Arial,sans-serif;background:#f4f8fc;color:#173f67;text-align:center}a{color:#0873c3;font-weight:700}</style>
+</head><body><div><p>Đang mở ERH APP TỔNG…</p><p id="fallback" hidden><a id="open" href="../app-tong-test.html">Chạm để mở ứng dụng</a></p></div>
+<script src="./launcher-config.js"></script><script>
+(function(){'use strict';const u=String((window.LAUNCHER_CONFIG||{}).TARGET_URL||'').trim();
+ const safe=u&&new URL(u,location.href);
+ if(safe&&safe.origin===location.origin&&safe.pathname==='/erh-access-test/app-tong-test.html'){
+   document.getElementById('open').href=safe.href;
+   location.replace(safe.href);
+ } else { document.querySelector('body p').textContent='Cấu hình đường dẫn App Tổng chưa hợp lệ.';document.getElementById('fallback').hidden=false; }
+})();
+</script></body></html>
