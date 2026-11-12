@@ -1823,7 +1823,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       if(!frame.isConnected||!current||current.frame!==frame||current.cancelled)return;
       if(!sameSession()){ok=false;result=null;error='Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.';}
       if(job.method==='APP_WEB_bootstrap')bootstrapReady=ok;
-      if(readMethods.has(job.method)){
+      if(readMethods.has(job.method)||job.catalogList){
         const key=readErrorKey(job);if(ok)rpcErrors.delete(key);else{if(rpcErrors.size>=20&&!rpcErrors.has(key))rpcErrors.delete(rpcErrors.keys().next().value);rpcErrors.set(key,{method:job.method,error:safeRpcError(error)});}
         renderRpcStatus();
       }
@@ -1846,14 +1846,15 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       }
       const first=rpcQueue.shift(),jobs=[first];
       // Never start a delayed write after its iframe can already have timed out.
-      if(writeMethods.has(first.method)&&Date.now()-first.enqueuedAt>10000){reply(first,false,null,catalogMethods.has(first.method)?'Danh sách vẫn đang tải; chưa gửi yêu cầu lưu danh mục. Hãy thử lại khi tải xong.':'Dữ liệu trước đó vẫn đang tải; chưa gửi yêu cầu Giao việc. Vui lòng thử lại sau khi tải xong.');scheduleRpc();return;}
+      // V35: catalogue LIST is a read request, never a business write. Do not expire it as a queued write.
+      if(writeMethods.has(first.method)&&!first.catalogList&&Date.now()-first.enqueuedAt>10000){reply(first,false,null,catalogMethods.has(first.method)?'Lệnh lưu danh mục chưa được gửi do hàng đợi quá tải. Kiểm tra trạng thái trước khi thử lại.':'Dữ liệu trước đó vẫn đang tải; chưa gửi yêu cầu Giao việc. Vui lòng thử lại sau khi tải xong.');scheduleRpc();return;}
       if(batchMethods.has(first.method))while(jobs.length<12&&rpcQueue.length&&batchMethods.has(rpcQueue[0].method))jobs.push(rpcQueue.shift());
       rpcActive=1;let settled=false;
       const finish=function(ok,value,error){
         if(settled)return;settled=true;
         if(serverTimer!==null)clearTimeout(serverTimer);serverTimer=null;
         if(jobs.length===1&&!batchMethods.has(first.method)){
-          if(!readMethods.has(first.method)){rpcEpoch++;staticReads.clear();}
+          if(!readMethods.has(first.method)&&!first.catalogList){rpcEpoch++;staticReads.clear();}
           reply(first,ok,value,error);
         }else if(ok&&value&&value.ok&&Array.isArray(value.results)&&value.results.length===jobs.length){
           jobs.forEach(function(job,i){const r=value.results[i]||{};reply(job,r.ok===true,r.result,r.error||'');});
@@ -1861,7 +1862,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         rpcActive=0;scheduleRpc();
       };
       // Read-only watchdog: report failure and release the queue; never retry the same call.
-      serverTimer=setTimeout(function(){finish(false,null,catalogMethods.has(first.method)?'Chưa nhận xác nhận lưu danh mục sau 45 giây. Tải lại danh mục để kiểm tra trước khi lưu lại.':writeMethods.has(first.method)?'Chưa nhận xác nhận giao việc sau 45 giây. Không giao lại trước khi kiểm tra danh sách: phiếu có thể đã được lưu.':'Máy chủ chưa trả dữ liệu sau 45 giây. Có thể tải lại phần dữ liệu bị lỗi.');},45000);
+      serverTimer=setTimeout(function(){finish(false,null,first.catalogList?'Chưa tải được danh mục V28 sau 45 giây. Không có thao tác ghi.':catalogMethods.has(first.method)?'Chưa nhận xác nhận lưu danh mục sau 45 giây. Tải lại danh mục để kiểm tra trước khi lưu lại.':writeMethods.has(first.method)?'Chưa nhận xác nhận giao việc sau 45 giây. Không giao lại trước khi kiểm tra danh sách: phiếu có thể đã được lưu.':'Máy chủ chưa trả dữ liệu sau 45 giây. Có thể tải lại phần dữ liệu bị lỗi.');},45000);
       try{
         console.info('[ERH GV DIAG] server call:',first.method,'batchSize',jobs.length);
         const runner=google.script.run.withSuccessHandler(function(result){console.info('[ERH GV DIAG] server success:',first.method,'ok',!!(result&&result.ok));finish(true,result,'');}).withFailureHandler(function(e){console.error('[ERH GV DIAG] server failure:',first.method,String(e&&e.message||e));finish(false,null,String(e&&e.message||e));});
@@ -1871,7 +1872,13 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     }
     function enqueueRpc(request){
       console.info('[ERH GV DIAG] RPC accepted:',String(request.method||''));
-      const id=String(request.id||''),reading=readMethods.has(request.method),writing=writeMethods.has(request.method);
+      // V35: Only {action:'list'} of the existing V28 endpoint is a read.
+      // ADD/EDIT remain protected writes with existing session and Native server gates.
+      const catalogList=request.method==='ERH_GV_V28_catalog'&&Array.isArray(request.args)&&
+        request.args[0]&&typeof request.args[0]==='object'&&!Array.isArray(request.args[0])&&
+        request.args[0].action==='list';
+      const id=String(request.id||''),reading=readMethods.has(request.method)||catalogList,
+        writing=writeMethods.has(request.method)&&!catalogList;
       if(!/^\d{1,12}$/.test(id)||typeof request.method!=='string'||!Array.isArray(request.args))return;
       frame.contentWindow.postMessage({type:'ERH_TAB4_GV_RPC_ACK_R2',id:id},'*');
       if(!sameSession()){reply({method:request.method,ids:[id]},false,null,'Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.');return;}
@@ -1900,12 +1907,13 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       const cached=key&&staticReads.get(key);
       if(cached&&cached.until>Date.now()){reply({key:key,method:request.method,args:request.args,ids:[id],epoch:rpcEpoch,cached:true},true,cached.value,'');return;}
       if(key&&readInFlight.has(key)){readInFlight.get(key).ids.push(id);return;}
-      const job={method:request.method,args:request.args,ids:[id],key:key,writeKey:writeKey,epoch:rpcEpoch,enqueuedAt:Date.now()};
+      const job={method:request.method,args:request.args,ids:[id],key:key,writeKey:writeKey,catalogList:!!catalogList,epoch:rpcEpoch,enqueuedAt:Date.now()};
       if(writeKey)writeInFlight.set(writeKey,job);
       if(key)readInFlight.set(key,job);
       // Prioritize explicit detail/plan selection over background reads; never overtake a queued write.
-      const urgent=job.method==='APP_WEB_bootstrap'||['APP_GIAOVIEC_V5_getTaskForEdit','ERH_V9_getTask','ERH_CT_getDetails','ERH_GV14_unassignedPlans'].includes(job.method);
-      if(urgent){let insertAt=0;for(let i=0;i<rpcQueue.length;i++)if(writeMethods.has(rpcQueue[i].method))insertAt=i+1;rpcQueue.splice(insertAt,0,job);}else rpcQueue.push(job);
+      // V35: user-triggered catalogue LIST joins urgent reads, behind already queued writes.
+      const urgent=job.catalogList||job.method==='APP_WEB_bootstrap'||['APP_GIAOVIEC_V5_getTaskForEdit','ERH_V9_getTask','ERH_CT_getDetails','ERH_GV14_unassignedPlans'].includes(job.method);
+      if(urgent){let insertAt=0;for(let i=0;i<rpcQueue.length;i++)if(rpcQueue[i].writeKey)insertAt=i+1;rpcQueue.splice(insertAt,0,job);}else rpcQueue.push(job);
       if(reading)renderRpcStatus();scheduleRpc();
     }
     // Only a server-confirmed GV cancellation invalidates these session-local GV read results.
