@@ -1,0 +1,31 @@
+{
+  "id": "/erh-access-test/cai-app-tong/erh-app-tong-pwa-v1",
+  "name": "ERH APP TỔNG – KỸ THUẬT KHỐI",
+  "short_name": "ERH APP TỔNG",
+  "description": "Ứng dụng tổng hợp kỹ thuật Khối ERH: Giao việc, Báo cáo công việc, Báo cáo ngày",
+  "start_url": "./pwa-start.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f8fc",
+  "theme_color": "#0873c3",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
