@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0873c3">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ERH APP TỔNG">
+<title>Cài biểu tượng ERH APP TỔNG</title>
+<script>
+window.__ERH_APP_TONG_PROMPT=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__ERH_APP_TONG_PROMPT=e;window.dispatchEvent(new Event('erh-app-tong-prompt'));});
+</script>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(150deg,#eaf5ff 0%,#f7fbff 70%,#e7f6ff 100%);font:15px/1.5 system-ui,Arial,sans-serif;color:#173f67}
+.card{width:min(100%,450px);background:#fff;border:1px solid #d6e6f3;border-radius:22px;box-shadow:0 16px 46px #0b497326;padding:25px 22px;text-align:center}
+.logo{width:134px;height:134px;object-fit:contain;border-radius:29px;box-shadow:0 5px 19px #1271c62a}
+h1{font-size:20px;line-height:1.3;margin:17px 0 4px;color:#0a3d73}p{margin:6px 0}.sub{color:#587088;font-size:13px}.status{background:#f0f7ff;border:1px solid #d5e7f7;padding:13px;text-align:left;border-radius:10px;color:#385c78;min-height:62px;margin:20px 0 14px}
+button,a.main-link{display:block;width:100%;border-radius:12px;padding:15px 12px;margin:10px 0;min-height:51px;cursor:pointer;font-weight:750;font-size:16px;text-decoration:none}
+button{color:white;background:#0873c3;border:1px solid #0873c3}button:disabled{opacity:.64;cursor:default}a.main-link{color:#0873c3;background:white;border:1px solid #0873c3}
+.instructions{text-align:left;border-top:1px solid #e5eff7;margin:19px 0 0;padding-top:12px;color:#526b80;font-size:13px}.instructions p{margin:6px 0}.foot{font-size:11px;color:#7c90a2;margin-top:18px}
+</style></head><body>
+<main class="card">
+<img class="logo" src="./icon-512.png" alt="ERH Kỹ thuật Khối">
+<h1>ERH APP TỔNG</h1><p class="sub">KỸ THUẬT KHỐI · Giao việc · Báo cáo công việc · Báo cáo ngày</p>
+<div id="status" class="status" role="status" aria-live="polite">Đang chuẩn bị cài đặt biểu tượng…</div>
+<button id="installBtn" disabled>ĐANG CHUẨN BỊ…</button>
+<a id="openBtn" class="main-link" href="../app-tong-test.html">MỞ APP TỔNG</a>
+<section class="instructions"><p><strong>Máy tính Windows (Chrome/Edge):</strong> bấm CÀI ĐẶT ICON, hoặc mở menu trình duyệt → Cài đặt trang này dưới dạng ứng dụng.</p>
+<p><strong>Điện thoại Android (Chrome):</strong> bấm CÀI ĐẶT ICON; nếu không thấy, chọn menu ⋮ → Thêm vào màn hình chính/Cài đặt ứng dụng.</p>
+<p><strong>iPhone (Safari):</strong> chọn Chia sẻ → Thêm vào Màn hình chính.</p></section>
+<div class="foot">Bộ cài độc lập V1 · Không thay đổi mã App Tổng đang chạy</div>
+</main>
+<script src="./launcher-config.js"></script>
+<script>
+(function(){'use strict';
+  const btn=document.getElementById('installBtn'),st=document.getElementById('status');
+  const allowed='/erh-access-test/app-tong-test.html';
+  const raw=String((window.LAUNCHER_CONFIG||{}).TARGET_URL||'').trim();
+  let target='';try{const u=new URL(raw,location.href);if(u.origin===location.origin&&u.pathname===allowed)target=u.href;}catch(_){}
+  if(target)document.getElementById('openBtn').href=target;
+  let promptEvent=window.__ERH_APP_TONG_PROMPT||null;
+  const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const isIos=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+  let ready=false;
+  function displayPrompt(){
+    if(window.__ERH_APP_TONG_PROMPT)promptEvent=window.__ERH_APP_TONG_PROMPT;
+    if(!promptEvent)return false;
+    btn.disabled=false;btn.textContent='CÀI ĐẶT ICON';st.textContent='Sẵn sàng. Bấm CÀI ĐẶT ICON để thêm ERH APP TỔNG vào màn hình thiết bị.';return true;
+  }
+  function fallback(){
+    if(promptEvent)return displayPrompt();
+    if(standalone()){
+      btn.disabled=false;btn.textContent='MỞ APP TỔNG';st.textContent='Biểu tượng đã được cài. Bấm MỞ APP TỔNG để tiếp tục.';return;
+    }
+    btn.disabled=false;btn.textContent='HƯỚNG DẪN CÀI ĐẶT';
+    st.textContent=isIos()?'Safari: bấm nút Chia sẻ → Thêm vào Màn hình chính.':
+      'Nếu trình duyệt không hiện hộp cài, mở menu ⋮ hoặc ⋯ và chọn “Cài đặt ứng dụng” / “Thêm vào màn hình chính”.';
+  }
+  async function prepare(){
+    if(!target){btn.disabled=true;st.textContent='Chưa có đường dẫn App Tổng hợp lệ.';return;}
+    if(!('serviceWorker' in navigator)){fallback();return;}
+    try{
+      const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+      try{await reg.update();}catch(_){}
+      await Promise.race([navigator.serviceWorker.ready,new Promise(resolve=>setTimeout(resolve,4500))]);
+      if(!navigator.serviceWorker.controller && !sessionStorage.getItem('ERH_APP_TONG_SW_RELOAD_V1')){
+        sessionStorage.setItem('ERH_APP_TONG_SW_RELOAD_V1','1');
+        st.textContent='Đang kích hoạt bộ cài. Trang sẽ tải lại một lần…';location.reload();return;
+      }
+      ready=true;
+      if(!displayPrompt()){st.textContent='Bộ cài đã chuẩn bị. Đang chờ trình duyệt cung cấp hộp cài…';setTimeout(fallback,2200);}
+    }catch(_){fallback();}
+  }
+  window.addEventListener('erh-app-tong-prompt',displayPrompt);
+  window.addEventListener('appinstalled',()=>{promptEvent=null;btn.textContent='ĐÃ CÀI ICON';btn.disabled=true;st.textContent='Đã cài biểu tượng thành công. Đang mở App Tổng…';if(target)setTimeout(()=>location.assign(target),700);});
+  btn.addEventListener('click',async()=>{
+    if(!target)return;
+    if(btn.textContent==='MỞ APP TỔNG'){location.assign(target);return;}
+    if(!promptEvent){displayPrompt();if(!promptEvent){fallback();return;}}
+    const p=promptEvent;promptEvent=null;window.__ERH_APP_TONG_PROMPT=null;
+    try{await p.prompt();const choice=await p.userChoice;
+      if(choice&&choice.outcome==='accepted'){st.textContent='Trình duyệt đã nhận yêu cầu cài đặt. Kiểm tra biểu tượng trên thiết bị.';btn.textContent='ĐÃ YÊU CẦU CÀI';btn.disabled=true;}
+      else{st.textContent='Đã hủy cài đặt. Có thể chọn lại.';fallback();}
+    }catch(_){fallback();}
+  });
+  prepare();displayPrompt();
+})();
+</script></body></html>
