@@ -2957,6 +2957,13 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
   var progress=Object.create(null);b.result.reportedLines.forEach(function(l){if(l&&l.taskId&&(Number(l.qty)>0||Number(l.minutes)>0))progress[text(l.taskId)]=true});
   var next={notstarted:[],doing:[],overdue:[],done:[],priority:[]},seen=Object.create(null);
   a.result.tasks.forEach(function(t){var id=text(t.id||t.taskId);if(!id||seen[id])return;seen[id]=true;var st=group(t,progress[id]);if(!st)return;next[st].push(id);
+   // V94 TEST: overdue is a TIME condition, not a mutually exclusive work status.
+   // Keep overdue tasks in the matching actual-progress group too; same TASK_ID,
+   // same authenticated snapshot, no extra reads or changes to stored statuses.
+   if(st==='overdue'){
+    var started=!!progress[id]||/DANG THUC HIEN|DA THUC HIEN|HOAN THANH|COMPLETED|IN PROGRESS|DOING|PARTIAL/.test(normalize(t.status));
+    next[started?'doing':'notstarted'].push(id);
+   }
    // User-confirmed PASS rule: completed group includes closed GV tasks AND tasks
    // with independently reported positive detail work, while unfinished portions
    // remain in their original overdue/doing group. Do not count TASK_ID twice.
