@@ -2739,7 +2739,21 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
   var due=dte(t.dueDate||t.due),now=new Date();now.setHours(0,0,0,0);if(due&&due<now)return 'overdue';
   return performed||/DANG THUC HIEN|DA THUC HIEN|HOAN THANH|COMPLETED|IN PROGRESS|DOING|PARTIAL/.test(s)?'doing':'notstarted';
  }
- function display(){if(!root)return;labels.slice(0,4).forEach(function(v){var n=root.querySelector('[data-status="'+v[0]+'"] b');if(n)n.textContent=counts?String(v[0]==='done'&&moduleName()==='GV'&&groups?groups.done.length:counts[v[0]]):'—'});
+ // BC33-V87: Completed BC33 statistic counts distinct reported DETAILS of closed tasks.
+ // GV continues counting distinct TASK_IDs. No write APIs or BC33 detail table changes.
+ function bc33DoneDetailCount(){
+  if(!groups||!Array.isArray(gvReportedLines))return 0;
+  var closedIds=new Set(groups.done||[]),unique=new Set();
+  gvReportedLines.forEach(function(line){
+   if(!line)return;
+   var taskId=text(line.taskId),detailId=text(line.detailId||line.detail);
+   if(!taskId||!detailId||!closedIds.has(taskId))return;
+   if(!(Number(line.qty)>0||Number(line.minutes)>0))return;
+   unique.add(JSON.stringify([taskId,detailId]));
+  });
+  return unique.size;
+ }
+ function display(){if(!root)return;labels.slice(0,4).forEach(function(v){var n=root.querySelector('[data-status="'+v[0]+'"] b');if(n)n.textContent=counts?String(v[0]==='done'&&moduleName()==='BC33'?bc33DoneDetailCount():v[0]==='done'&&moduleName()==='GV'&&groups?groups.done.length:counts[v[0]]):'—'});
   var pn=root.querySelector('[data-status="priority"] b');if(pn)pn.textContent=counts?String(counts.priority):'—';
   root.querySelectorAll('button[data-status]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.status===chosen));});
  }
