@@ -1862,6 +1862,14 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       if(job.key&&readInFlight.get(job.key)===job)readInFlight.delete(job.key);
       if(job.writeKey&&writeInFlight.get(job.writeKey)===job)writeInFlight.delete(job.writeKey);
       if(!frame.isConnected||!current||current.frame!==frame||current.cancelled)return;
+      // V95 TEST: A server-confirmed expired/revoked session must exit the GV UI,
+      // not accumulate failed reads beneath a stale login. Never log out for timeouts,
+      // network errors or replies belonging to a different (newer) session.
+      if(!ok&&sameSession()&&/(?:\b(?:AUTH_REQUIRED|SESSION_EXPIRED|SESSION_INVALID|SESSION_REVOKED)\b|phiên đăng nhập\s+(?:không còn hiệu lực|đã hết hạn))/i.test(String(error&&error.message||error||''))){
+        unmount();
+        if(typeof window.ERH_AUTH_expired==='function')window.ERH_AUTH_expired();
+        return;
+      }
       if(!sameSession()){ok=false;result=null;error='Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.';}
       if(job.method==='APP_WEB_bootstrap')bootstrapReady=ok;
       if(readMethods.has(job.method)||job.catalogList){
