@@ -1563,6 +1563,26 @@ window.ERH_BC33_BOOT_SHARE_V90={
  },
  clear:function(){bootReadV90=null;}
 };
+// V96 TEST – BC33 initial-data handoff ONLY. Share the existing server-verified
+// APP_WEB_bootstrap snapshot from GV with BC33 in the SAME authenticated session.
+// Read-only. No new privileges, no storage, no token in frame, and fallback to
+// the original BC33 server route if the response is invalid/stale/unavailable.
+var webBootReadV96=null,webBootMaxAgeV96=60000;
+window.ERH_BC33_WEB_BOOT_SHARE_V96={
+ put:function(result,session){
+  var current=doneSessionV20();
+  if(!current||session!==current||!result||result.ok!==true||
+     !result.staff||typeof result.staff!=='object'||Array.isArray(result.staff))return false;
+  webBootReadV96={session:current,at:Date.now(),result:result};return true;
+ },
+ get:function(session){
+  var current=doneSessionV20();
+  return webBootReadV96&&current&&session===current&&
+    webBootReadV96.session===current&&Date.now()-webBootReadV96.at<webBootMaxAgeV96
+    ?webBootReadV96.result:null;
+ },
+ clear:function(){webBootReadV96=null;}
+};
 var active=null;
 function unmount(){if(!active)return;active.cleanup();active.frame.src='about:blank';active.host.remove();active=null;}
 function mount(root,ctx){
@@ -1661,6 +1681,7 @@ function mount(root,ctx){
       window.ERH_BC33_DONE_SHARE_V20?.clear();
       window.ERH_BC33_TASKS_SHARE_V20?.clear();
       window.ERH_BC33_BOOT_SHARE_V90?.clear();
+      window.ERH_BC33_WEB_BOOT_SHARE_V96?.clear();
       window.ERH_DASH6_refresh?.();
      }
      if(ok&&req.method==='ERH_BC33_getCompleted'&&!cacheHitV20){
@@ -1669,6 +1690,7 @@ function mount(root,ctx){
      }
      if(ok&&req.method==='ERH_BC33_tasks'&&!cacheHitV20)window.ERH_BC33_TASKS_SHARE_V20?.put(result,token);
      if(ok&&req.method==='ERH_BC33_boot'&&!cacheHitV20)window.ERH_BC33_BOOT_SHARE_V90?.put(result,token);
+     if(ok&&req.method==='APP_WEB_bootstrap'&&!cacheHitV20)window.ERH_BC33_WEB_BOOT_SHARE_V96?.put(result,token);
      frame.contentWindow.postMessage({type:'ERH_T4_BC33O_RESULT_V17',id:String(req.id),ok,result,error},'*');}
   if(!sameSession()){reply(false,null,'Phiên đăng nhập đã thay đổi.');return;}
   // P2F1063 BC33-GIT-SESSION-BRIDGE: the sandboxed BC33 srcdoc has only
@@ -1680,6 +1702,10 @@ function mount(root,ctx){
    return a==='ERH_HOST_SESSION'?token:a;
   })});
   pending.add(reply);timer=setTimeout(function(){reply(false,null,'Máy chủ chưa trả dữ liệu sau 45 giây.');},45000);
+  if(req.method==='APP_WEB_bootstrap'){
+   var webBootstrap=window.ERH_BC33_WEB_BOOT_SHARE_V96?.get(token);
+   if(webBootstrap){cacheHitV20=true;reply(true,webBootstrap,'');return;}
+  }
   if(req.method==='ERH_BC33_getCompleted'||req.method==='ERH_BC33_tasks'||req.method==='ERH_BC33_boot'){
    var shared= req.method==='ERH_BC33_getCompleted'
      ?window.ERH_BC33_DONE_SHARE_V20?.get(token)
@@ -1871,7 +1897,10 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         return;
       }
       if(!sameSession()){ok=false;result=null;error='Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.';}
-      if(job.method==='APP_WEB_bootstrap')bootstrapReady=ok;
+      if(job.method==='APP_WEB_bootstrap'){
+        bootstrapReady=ok;
+        if(ok)window.ERH_BC33_WEB_BOOT_SHARE_V96?.put(result,rpcToken);
+      }
       if(readMethods.has(job.method)||job.catalogList){
         const key=readErrorKey(job);if(ok)rpcErrors.delete(key);else{if(rpcErrors.size>=20&&!rpcErrors.has(key))rpcErrors.delete(rpcErrors.keys().next().value);rpcErrors.set(key,{method:job.method,error:safeRpcError(error)});}
         renderRpcStatus();
@@ -1881,6 +1910,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         staticReads.set(job.key,{value:result,until:Date.now()+(cacheTTL[job.method]||30000)});
       }
       if(ok&&writeMethods.has(job.method)&&result&&result.ok!==false){
+        window.ERH_BC33_WEB_BOOT_SHARE_V96?.clear();
         window.ERH_DASH6_refresh?.();
       }
       job.ids.forEach(function(id){frame.contentWindow.postMessage({type:'ERH_TAB4_GV_RPC_RESULT_V1',id:id,ok:ok,result:result,error:error},'*');});
