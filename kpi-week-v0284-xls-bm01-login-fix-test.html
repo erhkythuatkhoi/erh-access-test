@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERH KPI TEST V0.28.4 | Sửa trạng thái đăng nhập và kiểm tra BM01</title>
+<style>
+:root{font-family:Arial,"Segoe UI",sans-serif;color:#193451;background:#f0f4f8}*{box-sizing:border-box}body{margin:0}header{background:#123a60;color:#fff;padding:20px 14px}.wrap{max-width:980px;margin:auto}h1{font-size:22px;margin:0}header p{margin:6px 0 0;font-size:13px;color:#d4e3f1}main{padding:18px 12px}.panel{background:#fff;padding:20px;margin-bottom:14px;border:1px solid #d9e2e9;border-radius:10px}.row{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.field{min-width:170px;flex:1}label{display:block;font-size:13px;font-weight:700;margin:0 0 5px}input,select{border:1px solid #afc1cf;padding:11px;width:100%;border-radius:7px;font-size:14px}button{background:#164b76;color:#fff;border:0;border-radius:7px;cursor:pointer;font-size:14px;font-weight:700;padding:11px 13px}button.secondary{background:#e0edf8;color:#174770}button:disabled{opacity:.45;cursor:default}.notice{padding:11px;border-radius:7px;background:#fff7df;border-left:4px solid #ad831e;font-size:13px;line-height:1.55}.muted{color:#556d80;font-size:13px;line-height:1.5}#status{font-size:14px;white-space:pre-wrap;min-height:22px}#status.error{color:#aa2020}#status.ok{color:#177243}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.two button{width:100%;min-height:52px}footer{font-size:12px;color:#60768c;margin-top:18px}@media(max-width:570px){.two{grid-template-columns:1fr}.panel{padding:13px}h1{font-size:19px}}
+</style>
+<!-- TEST only. Pinned library version, no KPI data sent to this CDN. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<header><div class="wrap"><h1>ERH KỸ THUẬT KHỐI · Xuất KPI Excel 2003</h1><p>TEST V0.28.4 · Chỉ đọc · Phân biệt đăng nhập và kết nối BM01</p></div></header>
+<main class="wrap">
+ <section class="panel"><p class="notice"><strong>Môi trường SANDBOX TEST (cần cài bổ sung route V0282 trên máy chủ).</strong> Trang này dùng API KPI của App Tổng TEST hiện có, chưa kết nối trực tiếp bảng tính KPI Tuần riêng của NV_TEST_HOA. Chỉ lấy dữ liệu <strong>đã lưu</strong> theo tài khoản đăng nhập. Bản xuất luôn là <strong>DỰ THẢO – CHƯA KÝ/DUYỆT</strong>, không có chữ ký mẫu.</p></section>
+ <section class="panel"><h2>1. Đăng nhập bằng tài khoản App Tổng TEST</h2>
+  <form id="loginForm" class="row"><div class="field"><label for="staffCode">Mã nhân viên</label><input id="staffCode" autocomplete="username" required></div><div class="field"><label for="password">Mật khẩu</label><input id="password" type="password" autocomplete="current-password" required></div><button id="loginBtn" type="submit">Đăng nhập</button><button id="logoutBtn" type="button" class="secondary" disabled>Thoát</button></form>
+  <div class="row" style="margin-top:10px;align-items:center"><button type="button" class="secondary" id="retryAlias" disabled>Kiểm tra lại mã xuất BM01</button><span class="muted">Đăng nhập thành công nhưng chưa lấy được mã BM01: không cần nhập lại mật khẩu; chỉ cần kiểm tra lại sau khi máy chủ cập nhật.</span></div>
+ </section>
+ <section class="panel"><h2>2. Chọn tuần đánh giá</h2><div class="row"><div class="field"><label for="period">Tuần KPI (T)</label><select id="period" disabled></select></div><div class="field"><label for="nextPeriod">Tuần giao KPI (T+1)</label><input id="nextPeriod" disabled></div><div class="field"><label for="actor">Nhân viên đang đăng nhập</label><input id="actor" disabled></div></div></section>
+ <section class="panel"><h2>3. Xuất Excel 97–2003 (.xls)</h2><div class="two"><button type="button" id="exportReview" disabled>Xuất BC Đánh giá tuần T (.xls)</button><button type="button" id="exportAssign" disabled>Xuất BC Giao KPI tuần T+1 (.xls)</button></div>
+  <p class="muted">Mỗi nút sẽ đọc lại dữ liệu từ máy chủ. Yêu cầu đủ 8 KPI đã được lưu, không lấy ô nhập đang sửa mà chưa gửi. Chỉ xuất báo cáo của chính tài khoản hiện tại; quyền xem báo cáo nhân viên khác phải triển khai riêng ở máy chủ.</p>
+  <p class="muted"><strong>Quy tắc tên:</strong> ĐG KPI_T1_26.11_PKT_hoann2.xls / BG KPI_T4_26.11_PKT_hoann2.xls. Mã <code>hoann2</code> lấy theo <strong>MA_XUAT_BCN</strong> của BM01 trên máy chủ, dựa vào <strong>MA_NV</strong> đã xác thực; không lấy tên người, không đoán mã và không dùng mã nhân sự của phiên khác. Nếu chưa kết nối nguồn BM01, App dừng xuất và báo lỗi.</p>
+  <p class="muted"><strong>Giới hạn TEST:</strong> Đây là tệp BIFF8 tương thích Excel 97–2003; chưa nghiệm thu việc in A4 ngang, logo và định dạng giống 100% mẫu biểu. Không dùng bản TEST thay chứng từ đã duyệt.</p>
+  <div id="status" role="status" aria-live="polite">Vui lòng đăng nhập để sử dụng.</div>
+ </section>
+ <footer>Không lưu mật khẩu, token hoặc số liệu KPI vào localStorage. Không ghi CSDL; không triển khai trigger hay thay hàm đã PASS.</footer>
+</main>
+<script>
+(()=>{'use strict';
+const ENDPOINT='https://script.google.com/macros/s/AKfycbyOfAesc3_-60IPPFmT78FFEWWSWMa8SHGbbWiCS36ZnftKqv_FdkHVIVHlljjTtdq5rw/exec';
+const el=id=>document.getElementById(id);
+const sink=document.createElement('div');sink.hidden=true;document.body.appendChild(sink);
+const CODES=Object.freeze(['D2:S4-2','D2:S4-3','D2:S4-4','D2:S4-5','KL-01','KL-02','KL-03','KL-04']);
+let token='',me='',periodCodes=[],busy=false;
+function status(m,error=false){el('status').textContent=m;el('status').className=error?'error':'ok'}
+function random(){return Array.from(crypto.getRandomValues(new Uint8Array(24)),v=>v.toString(16).padStart(2,'0')).join('')}
+function secureOrigin(s){try{const u=new URL(s);return u.protocol==='https:'&&!u.port&&(u.hostname==='script.google.com'||u.hostname==='script.googleusercontent.com'||u.hostname.endsWith('.script.googleusercontent.com')||u.hostname.endsWith('-script.googleusercontent.com'))}catch{return false}}
+function rpc(method,args){return new Promise((resolve,reject)=>{
+ const n=random().slice(0,40),form=document.createElement('form'),frame=document.createElement('iframe');
+ frame.name='kpiXls_'+n;frame.title='ERH KPI TEST API';form.method='POST';form.action=ENDPOINT;form.target=frame.name;
+ for(const [k,v] of Object.entries({nonce:n,method,args:JSON.stringify(args)})){const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i)}
+ let done=false;const timer=setTimeout(()=>finish(Error('TIMEOUT')),35000);
+ function finish(err,v){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',onMessage);form.remove();frame.remove();err?reject(err):resolve(v)}
+ function onMessage(e){if(!secureOrigin(e.origin))return;let d=e.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch{return}}
+  if(!d||typeof d!=='object'||d.nonce!==n||d.app!=='ERH_APP_TOTAL_PAGES_P2F1020'||typeof d.ok!=='boolean')return;
+  if(!d.ok)return finish(Error(String(d.error||'SERVER_ERROR')));finish(null,d.value)}
+ window.addEventListener('message',onMessage);sink.append(frame,form);try{form.submit()}catch{finish(Error('FORM_SUBMIT_ERROR'))}
+})}
+function nextCode(code){const i=periodCodes.indexOf(code);if(i<0||i===periodCodes.length-1)return '';const next=periodCodes[i+1];return next&&next!==code?next:''}
+function ui(){const good=!!token&&!busy,period=el('period').value,aliasOk=good&&!!bm01FileIdentity&&bm01FileIdentity.ready===true&&bm01FileIdentity.maNv===me;el('loginBtn').disabled=!(!token&&!busy);el('logoutBtn').disabled=!good;el('period').disabled=!good;el('retryAlias').disabled=!good;el('exportReview').disabled=!aliasOk||!period;el('exportAssign').disabled=!aliasOk||!nextCode(period);el('actor').value=token?me:'';el('nextPeriod').value=nextCode(period)||'Chưa có kỳ T+1'}
+function reset(){bm01FileIdentity=null;token='';me='';periodCodes=[];busy=false;el('period').replaceChildren();el('password').value='';ui()}
+function toValue(v,unit){if(v===''||v==null)return '';if(typeof v==='number')return Number.isFinite(v)?v:'';
+ const raw=String(v).trim().replace(',','.'),p=raw.endsWith('%'),n=Number(p?raw.slice(0,-1):raw);return Number.isFinite(n)?(p?n/100:n):String(v)}
+function fmt(v,unit){const n=toValue(v,unit);if(n==='')return '';if(unit==='%'){if(typeof n==='number')return String((n*100).toFixed(2)).replace(/\.00$/,'')+'%';return String(n)}return n}
+// V0.28.2 – Dung CHUNG ma xuat bao cao ngay BM01, truy van tu may chu.
+// API server tra ve fileCode theo NHAN_SU.MA_XUAT_BCN, khong suy doan tu ho ten.
+// Can ma MA_NV da xac thuc; tuyet doi khong su dung thong tin nhan vien tu client.
+let bm01FileIdentity=null;
+function safeFileCode(raw){
+ const value=String(raw==null?'':raw).trim();
+ return /^[A-Za-z0-9_-]{2,48}$/.test(value)?value:'';
+}
+function fileCodeForReport(resp,staff){
+ // Chi su dung ma BM01 do server xac thuc theo session cua tai khoan nay.
+ if(!bm01FileIdentity||bm01FileIdentity.ready!==true||
+    String(bm01FileIdentity.maNv||'').toUpperCase()!==staff)
+   throw Error('CHUA_CO_MA_XUAT_BM01_XAC_THUC');
+ const value=safeFileCode(bm01FileIdentity.fileCode);
+ if(!value)throw Error('MA_XUAT_BM01_KHONG_HOP_LE');
+ return value;
+}
+function buildExportFilename(kind,period,resp,staff){
+ const m=/^(\d{4})(\d{2})-T([1-4])$/.exec(String(period||''));
+ if(!m||Number(m[2])<1||Number(m[2])>12)throw Error('INVALID_REPORT_PERIOD_FOR_FILENAME');
+ if(kind!=='DG'&&kind!=='GIAO')throw Error('INVALID_REPORT_KIND');
+ const prefix=kind==='DG'?'ĐG':'BG';
+ // PKT dung cho PKT theo yeu cau; ma NV duoc tra ve boi co che BM01.
+ const department='PKT',employee=fileCodeForReport(resp,staff);
+ return prefix+' KPI_T'+m[3]+'_'+m[1].slice(-2)+'.'+m[2]+'_'+department+'_'+employee+'.xls';
+}
+function verify(r,staff,period){if(!r||!r.person||String(r.person.code||'').toUpperCase()!==staff)throw Error('SERVER_STAFF_MISMATCH');
+ if(!Array.isArray(r.records)||r.records.length!==8)throw Error('Kỳ '+period+' không có đủ 8 KPI đã lưu');
+ const set=new Set(r.records.map(x=>String(x.code||'')));
+ if(set.size!==8||CODES.some(code=>!set.has(code)))throw Error('Kỳ '+period+' thiếu hoặc trùng mã KPI');return r.records}
+function buildReport(resp,kind,period,staff){
+ const rec=verify(resp,staff,period),items=new Map((resp.items||[]).map(x=>[String(x.code),x])),data=new Map(rec.map(x=>[String(x.code),x]));
+ const name=kind==='DG'?'BÁO CÁO ĐÁNH GIÁ KPI':'BẢNG GIAO KPI';
+ const rows=[
+  ['ERH KỸ THUẬT KHỐI | '+name],
+  ['Kỳ KPI',period,'Nhân viên',String(resp.person.name||staff),'Mã NV',staff],
+  ['DỰ THẢO / TEST – CHƯA KÝ, CHƯA PHÊ DUYỆT'],
+  ['NGUỒN: API SANDBOX – DỮ LIỆU ĐÃ LƯU TẠI THỜI ĐIỂM XUẤT'],
+  ['STT','MÃ KPI','NHÓM','CHỈ TIÊU','ĐVT','TRỌNG SỐ','MỤC TIÊU','THỰC HIỆN','ĐIỂM KPI','TRẠNG THÁI']
+ ];
+ CODES.forEach((code,j)=>{const r=data.get(code),i=items.get(code)||{},unit=i.unit||r.unit||'';
+  rows.push([j+1,code,String(i.group||r.group||''),String(i.name||r.indicator||''),unit,String(i.weight??r.weight??''),fmt(r.target,unit),kind==='DG'?fmt(r.actual,unit):'',kind==='DG'?(r.score??''):'',String(r.status||'')]);});
+ rows.push(['GHI CHÚ','Bản TEST không sử dụng giá trị nhập chưa lưu; không thể hiện chữ ký điện tử hoặc trạng thái phê duyệt']);
+ rows.push(['NGƯỜI THỰC HIỆN','CHƯA KÝ','NGƯỜI DUYỆT','CHƯA PHÊ DUYỆT']);
+ const ws=XLSX.utils.aoa_to_sheet(rows);ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:2,c:0},e:{r:2,c:9}},{s:{r:3,c:0},e:{r:3,c:9}}];
+ ws['!cols']=[{wch:7},{wch:14},{wch:10},{wch:45},{wch:10},{wch:12},{wch:15},{wch:15},{wch:15},{wch:19}];
+ ws['!margins']={left:.35,right:.35,top:.5,bottom:.5,header:.2,footer:.2};
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,kind==='DG'?'BC_DANH_GIA':'BC_GIAO_KPI');
+ wb.Props={Title:name+' '+period,Subject:'TEST – Excel BIFF8',Author:'ERH KPI TEST'};
+ return wb;
+}
+async function exportXls(kind){if(busy)return;
+ if(!token||!me){status('Chưa đăng nhập.',true);return}
+ if(!window.XLSX||!XLSX.utils||typeof XLSX.write!=='function'){status('Thư viện BIFF8 chưa tải. Không tạo file .xls giả.',true);return}
+ const base=el('period').value,period=kind==='DG'?base:nextCode(base),session=token,staff=me;
+ if(!period){status('Không có kỳ T+1 tương ứng trong API.',true);return}
+ busy=true;ui();status('Đang đọc lại '+period+' theo tài khoản '+staff+'…');
+ try{
+  const r=await rpc('ERH_KPI_V0272_getReportWork',[session,staff,period]);
+  if(token!==session||me!==staff||el('period').value!==base)throw Error('Phiên hoặc kỳ đã đổi trong lúc tải');
+  const wb=buildReport(r,kind,period,staff);
+  const result=XLSX.write(wb,{bookType:'biff8',type:'array',bookSST:true});
+  const buffer=result instanceof ArrayBuffer?new Uint8Array(result):new Uint8Array(result.buffer||result);
+  const ole=[0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1];
+  if(buffer.length<1024||ole.some((b,i)=>buffer[i]!==b))throw Error('XLS_NOT_TRUE_BIFF8_OLE2');
+  const filename=buildExportFilename(kind,period,r,staff);
+  const blob=new Blob([buffer],{type:'application/vnd.ms-excel'}),a=document.createElement('a'),url=URL.createObjectURL(blob);
+  a.href=url;a.download=filename;a.style.display='none';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  status('Đã yêu cầu tải '+filename+' ('+blob.size+' byte). Kiểm tra bằng Excel 2003 để chốt PASS.');
+ }catch(err){status('CHƯA XUẤT: '+String(err.message||err),true);if(err.message==='SESSION_INVALID')reset()}
+ finally{busy=false;ui()}
+}
+// V0.28.4: Authentication success is independent from BM01 alias readiness.
+// Never discard a valid login solely because the optional alias route is unavailable.
+function aliasHint(err){
+ const code=String(err&&err.message||err||'UNKNOWN');
+ if(code==='BUSINESS_API_NOT_ACCEPTED')return 'Máy chủ chưa nhận route ERH_KPI_V0282_getFileAlias. Kiểm tra doPost và triển khai lại Web App TEST.';
+ if(code==='SERVER_ERROR')return 'API BM01 gặp lỗi phía máy chủ. Xem nhật ký Executions của Apps Script TEST và kiểm tra bản triển khai.';
+ if(code==='TIMEOUT')return 'Không nhận được trả lời từ Apps Script trong 35 giây. Kiểm tra mạng, endpoint hoặc quyền Web App.';
+ if(code==='SESSION_INVALID')return 'Phiên đã hết hạn hoặc bị thu hồi. Hãy thoát rồi đăng nhập lại.';
+ return 'API mã xuất BM01 trả về: '+code;
+}
+async function loadBm01Alias_(session,staff){
+ bm01FileIdentity=null;
+ status('Đã xác thực '+staff+'. Đang kiểm tra mã xuất BM01 trên máy chủ…');ui();
+ try{
+  const fileMeta=await rpc('ERH_KPI_V0282_getFileAlias',[session]);
+  if(token!==session||me!==staff)throw Error('SESSION_CHANGED');
+  if(!fileMeta||fileMeta.ready!==true||String(fileMeta.maNv||'').trim().toUpperCase()!==staff||!safeFileCode(fileMeta.fileCode))
+   throw Error('BM01_MA_XUAT_CHUA_SAN_SANG:'+String(fileMeta?.status||'UNKNOWN'));
+  bm01FileIdentity={ready:true,maNv:staff,fileCode:safeFileCode(fileMeta.fileCode)};
+  status('ĐĂNG NHẬP PASS · '+staff+' · Mã xuất BM01: '+bm01FileIdentity.fileCode+' · Đã mở chức năng xuất Excel.');
+ }catch(err){
+  bm01FileIdentity=null;
+  status('ĐĂNG NHẬP PASS · '+staff+'. CHƯA KẾT NỐI MÃ XUẤT BM01: '+aliasHint(err)+' Nút xuất Excel tạm khóa; dữ liệu KPI không bị thay đổi.',true);
+ }finally{ui()}
+}
+el('loginForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(busy||token)return;
+ busy=true;ui();let step='LOGIN_AUTH';status('Bước 1/4: Đang xác thực tài khoản App Tổng TEST…');
+ try{
+  const auth=await rpc('ERH_AUTH_login',[el('staffCode').value.trim().toUpperCase(),el('password').value]);
+  el('password').value='';
+  if(!auth?.ok||!auth.sessionToken)throw Error('LOGIN_REJECTED');
+  step='CHECK_SESSION';status('Bước 2/4: Đang kiểm tra phiên đăng nhập…');
+  const verified=await rpc('ERH_AUTH_checkSession',[auth.sessionToken]);
+  if(!verified?.ok||!verified.user?.maNv)throw Error('SESSION_INVALID');
+  step='KPI_OPTIONS';status('Bước 3/4: Đang lấy danh sách kỳ KPI…');
+  const opts=await rpc('ERH_KPI_getOptions',[auth.sessionToken]);
+  const codes=(opts?.periods||[]).map(p=>String(p.code||'')).filter(c=>/^\d{6}-T[1-4]$/.test(c));
+  if(!codes.length)throw Error('KPI_OPTIONS_EMPTY');
+  codes.sort();periodCodes=[...new Set(codes)];
+  token=auth.sessionToken;me=String(verified.user.maNv).trim().toUpperCase();
+  el('period').replaceChildren();periodCodes.forEach(c=>el('period').append(new Option(c,c)));
+  el('period').value=periodCodes.includes('202611-T2')?'202611-T2':periodCodes[periodCodes.length-1];
+  step='BM01_ALIAS';status('Bước 4/4: Đăng nhập đã thành công. Đang đọc mã xuất BM01…');
+  await loadBm01Alias_(token,me);
+ }catch(err){
+  reset();status('KHÔNG ĐĂNG NHẬP ĐƯỢC · Bước '+step+' · '+String(err.message||err)+'. Không thay đổi tài khoản, mật khẩu hoặc CSDL.',true);
+ }finally{busy=false;ui()}
+});
+el('retryAlias').addEventListener('click',async()=>{
+ if(busy||!token||!me)return;
+ busy=true;ui();const session=token,staff=me;
+ try{await loadBm01Alias_(session,staff)}finally{busy=false;ui()}
+});
+el('logoutBtn').addEventListener('click',async()=>{const old=token;reset();status('Đã thoát, xóa phiên khỏi giao diện.');if(old){try{await rpc('ERH_AUTH_logout',[old])}catch{status('Đã xóa phiên khỏi trình duyệt; máy chủ chưa xác nhận logout.',true)}}});
+el('period').addEventListener('change',ui);
+el('exportReview').addEventListener('click',()=>exportXls('DG'));
+el('exportAssign').addEventListener('click',()=>exportXls('GIAO'));
+ui();
+})();
+</script>
+</body></html>
