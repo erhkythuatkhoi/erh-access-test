@@ -260,6 +260,32 @@ body[data-erh-d15-module="GV"] #content .gv-original-frame-host>iframe[data-erh-
 <body>
 <div id="erh-test-connection-footer" style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#fff1d6;color:#563600;padding:5px;text-align:center;font:12px sans-serif">App Tổng Pages TEST P2F.10.20 — kết nối đăng nhập; API nghiệp vụ chưa mở</div>
 <script src="transport.js"></script>
+<script id="erh-perf03-v1">
+(function(){'use strict';
+ const names=new Set(['APP_DIADIEM_getAll','APP_GIAOVIEC_V5_getSourceMap']);
+ const cache=new Map(), ttl=30000;let epoch=0, session='';
+ const counts={hits:0,stored:0,cleared:0};
+ function current(){try{return String(window.ERH_AUTH_token?.()||'');}catch(_){return '';}}
+ function clear(){cache.clear();epoch++;counts.cleared++;}
+ function sync(){const t=current();if(t!==session){clear();session=t;}return t;}
+ function valid(name,value){if(name==='APP_DIADIEM_getAll')return !!(value&&value.ok===true&&value.source==='APP_TONG_TEST_COPY'&&Array.isArray(value.rows));return !!(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length&&Object.values(value).every(x=>typeof x==='string')&&!Object.prototype.hasOwnProperty.call(value,'error'));}
+ function start(module,name,args,token,seen){
+  const t=sync();if(!t||t!==token||!names.has(name)||!Array.isArray(args)||args.length!==0||!['GV','BC33'].includes(module))return null;
+  const first=!seen.has(name);seen.add(name);const old=cache.get(name);
+  const stamp={module,name,epoch,token,hit:false};
+  if(first&&old&&old.module!==module&&old.epoch===epoch&&Date.now()<old.until){cache.delete(name);stamp.hit=true;stamp.value=JSON.parse(old.json);counts.hits++;}
+  else if(old&&Date.now()>=old.until)cache.delete(name);
+  return stamp;
+ }
+ function put(stamp,value){if(!stamp||stamp.hit||!sync()||stamp.token!==session||stamp.epoch!==epoch||!valid(stamp.name,value))return false;
+  try{const json=JSON.stringify(value);if(json.length>1000000)return false;cache.set(stamp.name,{module:stamp.module,epoch,until:Date.now()+ttl,json});counts.stored++;return true;}catch(_){return false;}}
+ window.ERH_DATA_MANAGER_PERF03={start,put,clear,stats:()=>({...counts,version:'PERF03_V1_20261117',entries:cache.size})};
+ window.addEventListener('ERH_GVC7_CANCEL_COMMITTED_V1',clear);
+ window.addEventListener('pagehide',clear);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
+ console.info('[ERH PERF03 V1] ready');
+})();
+</script>
 <!-- ERH KỸ THUẬT KHỐI | LOGIN VIEW | UI-only fragment for Index.html
      Designed from 19/10 screenshot. No doGet, no stand-alone login database.
      Mandatory backend endpoints in ERH_Login_Bridge.gs. -->
@@ -516,6 +542,7 @@ body[data-erh-d15-module="GV"] #content .gv-original-frame-host>iframe[data-erh-
     try { sessionStorage.removeItem('ERH_APP_TONG_AUTH_SESSION_V4'); } catch (_) {}
     try { ma.value = localStorage.getItem(KEY) || ''; } catch (_) { /* Storage may be disabled. */ }
     function authSucceeded(r) {
+      window.ERH_DATA_MANAGER_PERF03?.clear();
       activeToken=String(r.sessionToken||'');
       document.documentElement.classList.add('erh-auth-ready');
       $('erh-login-root').classList.add('erh-hidden');
@@ -523,6 +550,7 @@ body[data-erh-d15-module="GV"] #content .gv-original-frame-host>iframe[data-erh-
     }
     window.ERH_AUTH_token=()=>activeToken;
     window.ERH_AUTH_expired=function(){
+      window.ERH_DATA_MANAGER_PERF03?.clear();
       activeToken='';
       document.documentElement.classList.remove('erh-auth-ready');
       $('erh-login-root').classList.remove('erh-hidden');
@@ -1402,6 +1430,7 @@ function mount({containerId,sessionToken,getToken}){
   let done=false,readTimer=null;
   function respond(ok,result,error){if(done)return;done=true;clearTimeout(readTimer);pending.delete(respond);if(!live())return;if(!sameSession()){ok=false;result=null;error='Phiên đăng nhập đã thay đổi.';}frame.contentWindow.postMessage({type:'ERH_BCN_DATA_RESULT_V1',id,ok,result,error},'*');}
   if(!verified||!sameSession()){respond(false,null,'Phiên đăng nhập chưa được xác nhận hoặc đã thay đổi.');return;}
+  window.ERH_DATA_MANAGER_PERF03?.clear();
   pending.add(respond);readTimer=setTimeout(function(){respond(false,null,'Máy chủ chưa trả dữ liệu sau 45 giây.');},45000);
   try{google.script.run.withSuccessHandler(function(result){respond(true,result,'');}).withFailureHandler(function(error){respond(false,null,String(error?.message||error));}).BCN_AT_DATA_read(sessionToken,req.action,String(req.arg||''));}catch(error){respond(false,null,String(error?.message||error));}
  }
@@ -1631,6 +1660,7 @@ function mount(root,ctx){
  // PERF04 V1: coalesce only identical concurrent taskFast requests within this mount.
  // Never retain completed results, never coalesce a write or a different task/session.
  const taskFastFlightsPerf04=new Map();let taskFastSeqPerf04=0;
+ const perf03Seen=new Set();
  function live(){return alive&&active?.frame===frame&&frame.isConnected;}
  function sameSession(){return ctx.getToken()===token;}
  // D8: native modal uses the browser top layer; do not place it using iframe/VisualViewport height.
@@ -1696,13 +1726,13 @@ function mount(root,ctx){
   try{google.script.run.withSuccessHandler(function(r){finish(r,'');}).withFailureHandler(function(e){finish(null,String(e?.message||e));}).ERH_T4_BC33_originalBatch(groups.map(function(g){return {id:g.id,method:g.method,args:g.args};}),token);}catch(e){finish(null,String(e?.message||e));}
  }
  function run(req){
-  let done=false,timer=null,cacheHitV20=false,taskFlightPerf04=null,taskLeaderPerf04=false;
+  let done=false,timer=null,cacheHitV20=false,taskFlightPerf04=null,taskLeaderPerf04=false,perf03Stamp=null,perf03Barrier=false;
   function reply(ok,result,error){if(done)return;done=true;clearTimeout(timer);pending.delete(reply);
      if(taskLeaderPerf04&&taskFlightPerf04){
       if(taskFastFlightsPerf04.get(taskFlightPerf04.key)===taskFlightPerf04)taskFastFlightsPerf04.delete(taskFlightPerf04.key);
       const followers=taskFlightPerf04.followers.splice(0);
       followers.forEach(function(fn){try{fn(ok,result,error);}catch(_e){}});
-     }if(!live())return;if(!sameSession()){ok=false;result=null;error='Phiên đăng nhập đã thay đổi.';}if(ok&&/^(ERH_BC33_submit|ERH_BC33_save|ERH_BC33_cancel|ERH_BC_V3_submit)/.test(req.method)&&result&&result.ok!==false){
+     }if(!live())return;if(!sameSession()){ok=false;result=null;error='Phiên đăng nhập đã thay đổi.';}if(perf03Barrier)window.ERH_DATA_MANAGER_PERF03?.clear();if(ok)window.ERH_DATA_MANAGER_PERF03?.put(perf03Stamp,result);if(ok&&/^(ERH_BC33_submit|ERH_BC33_save|ERH_BC33_cancel|ERH_BC_V3_submit)/.test(req.method)&&result&&result.ok!==false){
       window.ERH_BC33_DONE_SHARE_V20?.clear();
       window.ERH_BC33_TASKS_SHARE_V20?.clear();
       window.ERH_BC33_BOOT_SHARE_V90?.clear();
@@ -1735,6 +1765,10 @@ function mount(root,ctx){
    if(existing){existing.followers.push(reply);return;}
    taskFlightPerf04={key:key,followers:[],id:++taskFastSeqPerf04};taskLeaderPerf04=true;taskFastFlightsPerf04.set(key,taskFlightPerf04);
   }
+  perf03Barrier=!BATCH_READ_METHODS.has(req.method);
+  if(perf03Barrier)window.ERH_DATA_MANAGER_PERF03?.clear();
+  perf03Stamp=window.ERH_DATA_MANAGER_PERF03?.start('BC33',req.method,req.args,token,perf03Seen);
+  if(perf03Stamp?.hit){reply(true,perf03Stamp.value,'');return;}
   if(req.method==='APP_WEB_bootstrap'){
    var webBootstrap=window.ERH_BC33_WEB_BOOT_SHARE_V96?.get(token);
    if(webBootstrap){cacheHitV20=true;reply(true,webBootstrap,'');return;}
@@ -1897,6 +1931,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     const batchMethods=new Set(['APP_WEB_bootstrap','APP_WEB_getAssignmentSources','APP_GIAOVIEC_getMyTasks','APP_BAOCAO_getMyHistory','APP_DASHBOARD_getSummary','APP_GIAOVIEC_V5_getSourceMap','APP_GIAOVIEC_V5_getTaskForEdit','APP_DIADIEM_getAll','ERH_V8_myAssignments','ERH_V9_getTask','ERH_V9_canEditCatalog','ERH_GV14_unassignedPlans','ERH_GV14_runtimeReadOnlyV11410','ERH_CTD_list','ERH_CT_getDetails','ERH_BC33_getCompleted','ERH_BC33_listCompleted']);
     const readMethods=new Set([...batchMethods,'APP_BAOCAO_getMyDailyReport','ERH_BC33_viewCompleted','ERH_BC_V3_pending']);
     const staticMethods=new Set(['APP_WEB_getAssignmentSources','APP_GIAOVIEC_V5_getSourceMap','APP_DIADIEM_getAll','APP_GIAOVIEC_getMyTasks','ERH_V8_myAssignments','APP_DASHBOARD_getSummary','ERH_GV14_unassignedPlans','ERH_BC33_getCompleted','ERH_BC33_listCompleted']);
+    const perf03Seen=new Set();
     // GV CACHE 0311: session-local cache; authorization and project belong to this adapter instance.
     // Server-side source revisions are not available in this HTML, so mutable results use a safety TTL.
     const cacheTTL={APP_WEB_getAssignmentSources:300000,APP_GIAOVIEC_V5_getSourceMap:300000,APP_DIADIEM_getAll:300000,APP_GIAOVIEC_getMyTasks:45000,ERH_V8_myAssignments:45000,APP_DASHBOARD_getSummary:45000,ERH_GV14_unassignedPlans:60000,ERH_BC33_getCompleted:45000,ERH_BC33_listCompleted:45000};
@@ -1938,6 +1973,8 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         const key=readErrorKey(job);if(ok)rpcErrors.delete(key);else{if(rpcErrors.size>=20&&!rpcErrors.has(key))rpcErrors.delete(rpcErrors.keys().next().value);rpcErrors.set(key,{method:job.method,error:safeRpcError(error)});}
         renderRpcStatus();
       }
+      if(job.writeKey)window.ERH_DATA_MANAGER_PERF03?.clear();
+      if(ok&&!job.cached&&job.epoch===rpcEpoch)window.ERH_DATA_MANAGER_PERF03?.put(job.perf03Stamp,result);
       if(ok&&!job.cached&&job.epoch===rpcEpoch&&staticMethods.has(job.method)){
         if(staticReads.size>=32)staticReads.delete(staticReads.keys().next().value);
         staticReads.set(job.key,{value:result,until:Date.now()+(cacheTTL[job.method]||30000)});
@@ -2014,12 +2051,14 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       }
 
       // Stop a pre-write response or catalogue cache satisfying a post-write read.
-      if(!reading){rpcEpoch++;staticReads.clear();}
+      if(!reading){window.ERH_DATA_MANAGER_PERF03?.clear();rpcEpoch++;staticReads.clear();}
       const key=reading?rpcEpoch+'|'+request.method+'|'+JSON.stringify(request.args):null;
+      const perf03Stamp=reading?window.ERH_DATA_MANAGER_PERF03?.start('GV',request.method,request.args,rpcToken,perf03Seen):null;
+      if(perf03Stamp?.hit){reply({key:key,method:request.method,args:request.args,ids:[id],epoch:rpcEpoch,cached:true},true,perf03Stamp.value,'');return;}
       const cached=key&&staticReads.get(key);
       if(cached&&cached.until>Date.now()){reply({key:key,method:request.method,args:request.args,ids:[id],epoch:rpcEpoch,cached:true},true,cached.value,'');return;}
       if(key&&readInFlight.has(key)){readInFlight.get(key).ids.push(id);return;}
-      const job={method:request.method,args:request.args,ids:[id],key:key,writeKey:writeKey,catalogList:!!catalogList,epoch:rpcEpoch,enqueuedAt:Date.now()};
+      const job={method:request.method,args:request.args,ids:[id],key:key,writeKey:writeKey,catalogList:!!catalogList,epoch:rpcEpoch,enqueuedAt:Date.now(),perf03Stamp:perf03Stamp};
       if(writeKey)writeInFlight.set(writeKey,job);
       if(key)readInFlight.set(key,job);
       // Prioritize explicit detail/plan selection over background reads; never overtake a queued write.
