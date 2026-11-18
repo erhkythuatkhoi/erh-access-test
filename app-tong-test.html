@@ -1665,6 +1665,8 @@ function mount(root,ctx){
  const perf03Seen=new Set();
  function live(){return alive&&active?.frame===frame&&frame.isConnected;}
  function sameSession(){return ctx.getToken()===token;}
+ // OPT03 V1: read-only, session-local busy signal; no API calls.
+ window.ERH_OPT03_BC33_busy=function(){return !!(live()&&sameSession()&&(pending.size||queue.length||readQueue.length||readBusy));};
  // D8: native modal uses the browser top layer; do not place it using iframe/VisualViewport height.
  let sendingPopupD8=null,sendingOwnerD8='',sendingStyleD8=null,sendingBackdropD8=null;
  function clearSendingD8(){
@@ -1925,6 +1927,8 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     const catalogMethods=new Set(['ERH_CTD_add','ERH_V9_updateCatalog','ERH_GV_V28_catalog']);
     const writeMethods=new Set([...createMethods,...catalogMethods]);
     function sameSession(){return !!rpcToken&&ctx.getToken()===rpcToken;}
+    // OPT03 V1: queued or active GV RPCs take priority over periodic stats.
+    window.ERH_OPT03_GV_busy=function(){return !!(current&&current.frame===frame&&!current.cancelled&&frame.isConnected&&sameSession()&&(rpcActive||rpcQueue.length||writeInFlight.size));};
     function rpcCleanup(){
       if(pumpTimer!==null)clearTimeout(pumpTimer);
       if(serverTimer!==null)clearTimeout(serverTimer);
@@ -2872,6 +2876,8 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
  function liveCheck(){
   if(livePoll||loading||document.hidden||!counts||!auth()||auth()!==token)return;
   if(moduleName()!=='GV'&&moduleName()!=='BC33')return;
+  // OPT03 V1: defer only periodic reads; forced refresh and writes remain unchanged.
+  try{if(window.ERH_OPT03_GV_busy?.()||window.ERH_OPT03_BC33_busy?.()||gvDetailBusy)return;}catch(_e){return;}
   var now=Date.now();if(now-liveCheckedAt<60000)return; // At most one check/minute.
   var session=auth();livePoll=true;liveCheckedAt=now;
   var jobs=[{id:'901',method:'ERH_BC33_boot',args:[]},
