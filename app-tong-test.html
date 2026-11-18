@@ -1387,7 +1387,7 @@ function mount({containerId,sessionToken,getToken}){
    verified=result;sendContext();
   }
   timer=setTimeout(function(){finish('Máy chủ chưa trả dữ liệu sau 45 giây. Anh có thể tải lại.');},45000);
-  try{google.script.run.withSuccessHandler(function(result){finish('',result);}).withFailureHandler(function(error){finish(String(error?.message||error));}).BCN_AT_UI_bootstrap(sessionToken);}catch(error){finish(String(error?.message||error));}
+  try{google.script.run.withSuccessHandler(function(result){finish('',result);}).withFailureHandler(function(error){finish(String(error?.message||error));}).BCN_AT_UI_bootstrap(sessionToken,"ERH_PERF08_V2_METADATA_ONLY");}catch(error){finish(String(error?.message||error));}
  }
  function onMessage(event){
   if(!live()||event.source!==frame.contentWindow||!event.data)return;const req=event.data;
