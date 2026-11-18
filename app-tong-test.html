@@ -2968,15 +2968,15 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
        gvDetailPending.delete(x.id);
        var item=results.find(function(r){return text(r&&r.id)===text(i+1)});
        var result=item&&item.ok&&item.result;
-       // taskFast result is {task:{...},details:[{name,unit,assigned,normMinutes,...}]}.
-       if(result&&Array.isArray(result.details))gvDetailCache.set(x.id,result.details);
+       // DETAIL01 V1: authorized GV snapshot rows; no BC33 evidence/history reads.
+       if(Array.isArray(result))gvDetailCache.set(x.id,result.map(function(d){return {id:d.DETAIL_ID,name:d.TEN_CONG_VIEC,unit:d.DON_VI,assigned:Number(d.KL_GIAO)||0,normMinutes:Number(d.DINH_MUC_PHUT)||0};}));
        document.querySelectorAll('#erh-gv-stats-detail [data-gv-detail-id]').forEach(function(n){if(n.getAttribute('data-gv-detail-id')===x.id)gvPaintDetails(n,x.task)});
      });
      gvLoadNextDetails();
    }
    try{
-     var jobs=batch.map(function(x,i){return {id:String(i+1),method:'ERH_BC33_taskFast',args:[session,x.id]}});
-     google.script.run.withSuccessHandler(finish).withFailureHandler(function(){finish(null)}).ERH_T4_BC33_originalBatch(jobs,session);
+     var jobs=batch.map(function(x,i){return {id:String(i+1),method:'ERH_CT_getDetails',args:[x.id]}});
+     google.script.run.withSuccessHandler(finish).withFailureHandler(function(){finish(null)}).ERH_TAB1_GV_DHT22_readBatch(jobs,session);
    }catch(_error){finish(null)}
  }
 
