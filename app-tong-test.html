@@ -3294,6 +3294,18 @@ else{ensureHelp();new MutationObserver(schedule).observe(document.body,{childLis
 })();
 <\/script>`;
 </script>
+
+<style id="erh-mobile-host-drawer-v2-20261118">
+/* Mobile only: drawer must be outside the flex layout, even on fixed-height module screens. */
+@media screen and (max-width:780px){
+ body[data-erh-d15-module]>.app>aside.side{
+  position:fixed!important;top:0!important;left:0!important;bottom:0!important;
+  width:min(84vw,310px)!important;max-width:310px!important;min-width:0!important;
+  height:100dvh!important;flex:none!important;
+ }
+ body[data-erh-d15-module]>.app>.main{width:100%!important;max-width:100%!important;flex:1 1 0%!important;min-width:0!important}
+}
+</style>
 </body>
 </html>
 
