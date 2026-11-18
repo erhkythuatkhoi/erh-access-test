@@ -1934,6 +1934,19 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     const readMethods=new Set([...batchMethods,'APP_BAOCAO_getMyDailyReport','ERH_BC33_viewCompleted','ERH_BC_V3_pending']);
     const staticMethods=new Set(['APP_WEB_getAssignmentSources','APP_GIAOVIEC_V5_getSourceMap','APP_DIADIEM_getAll','APP_GIAOVIEC_getMyTasks','ERH_V8_myAssignments','APP_DASHBOARD_getSummary','ERH_GV14_unassignedPlans','ERH_BC33_getCompleted','ERH_BC33_listCompleted']);
     const perf03Seen=new Set();
+    // PERF-GV01: one-shot initial plan reuse, same authorized bootstrap and epoch.
+    let perfGV01Seed=null,perfGV01Seeded=false;
+    function perfGV01SeedPlans(job,result){
+      if(perfGV01Seeded||job.epoch!==0||rpcEpoch!==0||!sameSession()||!result||result.ok!==true||result.readOnly!==true||!Array.isArray(result.plans))return;
+      perfGV01Seeded=true;
+      perfGV01Seed={until:Date.now()+2000,value:{ok:true,readOnly:true,plans:result.plans}};
+    }
+    function perfGV01TakePlans(request){
+      if(!perfGV01Seed||request.method!=='ERH_GV14_unassignedPlans'||JSON.stringify(request.args)!=='[\"ERH_HOST_SESSION\"]')return null;
+      const seed=perfGV01Seed;perfGV01Seed=null;
+      if(rpcEpoch!==0||!sameSession()||Date.now()>seed.until)return null;
+      console.info('[ERH PERF GV01] initial plan reuse');return seed.value;
+    }
     // GV CACHE 0311: session-local cache; authorization and project belong to this adapter instance.
     // Server-side source revisions are not available in this HTML, so mutable results use a safety TTL.
     const cacheTTL={APP_WEB_getAssignmentSources:300000,APP_GIAOVIEC_V5_getSourceMap:300000,APP_DIADIEM_getAll:300000,APP_GIAOVIEC_getMyTasks:45000,ERH_V8_myAssignments:45000,APP_DASHBOARD_getSummary:45000,ERH_GV14_unassignedPlans:60000,ERH_BC33_getCompleted:45000,ERH_BC33_listCompleted:45000};
@@ -1969,7 +1982,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       if(!sameSession()){ok=false;result=null;error='Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.';}
       if(job.method==='APP_WEB_bootstrap'){
         bootstrapReady=ok;
-        if(ok)window.ERH_BC33_WEB_BOOT_SHARE_V96?.put(result,rpcToken);
+        if(ok){window.ERH_BC33_WEB_BOOT_SHARE_V96?.put(result,rpcToken);perfGV01SeedPlans(job,result);}
       }
       if(readMethods.has(job.method)||job.catalogList){
         const key=readErrorKey(job);if(ok)rpcErrors.delete(key);else{if(rpcErrors.size>=20&&!rpcErrors.has(key))rpcErrors.delete(rpcErrors.keys().next().value);rpcErrors.set(key,{method:job.method,error:safeRpcError(error)});}
@@ -2055,6 +2068,8 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
       // Stop a pre-write response or catalogue cache satisfying a post-write read.
       if(!reading){window.ERH_DATA_MANAGER_PERF03?.clear();rpcEpoch++;staticReads.clear();}
       const key=reading?rpcEpoch+'|'+request.method+'|'+JSON.stringify(request.args):null;
+      const initialPlans=reading?perfGV01TakePlans(request):null;
+      if(initialPlans){reply({key:key,method:request.method,args:request.args,ids:[id],epoch:rpcEpoch,cached:true},true,initialPlans,'');return;}
       const perf03Stamp=reading?window.ERH_DATA_MANAGER_PERF03?.start('GV',request.method,request.args,rpcToken,perf03Seen):null;
       if(perf03Stamp?.hit){reply({key:key,method:request.method,args:request.args,ids:[id],epoch:rpcEpoch,cached:true},true,perf03Stamp.value,'');return;}
       const cached=key&&staticReads.get(key);
