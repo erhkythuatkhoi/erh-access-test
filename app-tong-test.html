@@ -1995,7 +1995,7 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         if(staticReads.size>=32)staticReads.delete(staticReads.keys().next().value);
         staticReads.set(job.key,{value:result,until:Date.now()+(cacheTTL[job.method]||30000)});
       }
-      if(ok&&writeMethods.has(job.method)&&result&&result.ok!==false){
+      if(ok&&writeMethods.has(job.method)&&!job.catalogList&&result&&result.ok!==false){
         window.ERH_BC33_WEB_BOOT_SHARE_V96?.clear();
         window.ERH_DASH6_refresh?.();
       }
