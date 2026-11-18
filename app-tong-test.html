@@ -1939,13 +1939,14 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
     function perfGV01SeedPlans(job,result){
       if(perfGV01Seeded||job.epoch!==0||rpcEpoch!==0||!sameSession()||!result||result.ok!==true||result.readOnly!==true||!Array.isArray(result.plans))return;
       perfGV01Seeded=true;
-      perfGV01Seed={until:Date.now()+2000,value:{ok:true,readOnly:true,plans:result.plans}};
+      const seededAt=Date.now();
+      perfGV01Seed={seededAt:seededAt,until:seededAt+2000,value:{ok:true,readOnly:true,plans:result.plans}};
     }
     function perfGV01TakePlans(request){
       if(!perfGV01Seed||request.method!=='ERH_GV14_unassignedPlans'||JSON.stringify(request.args)!=='[\"ERH_HOST_SESSION\"]')return null;
       const seed=perfGV01Seed;perfGV01Seed=null;
       if(rpcEpoch!==0||!sameSession()||Date.now()>seed.until)return null;
-      console.info('[ERH PERF GV01] initial plan reuse');return seed.value;
+      console.info('[ERH PERF GV01 V2] initial plan reuse');return seed.value;
     }
     // GV CACHE 0311: session-local cache; authorization and project belong to this adapter instance.
     // Server-side source revisions are not available in this HTML, so mutable results use a safety TTL.
@@ -2008,7 +2009,14 @@ window.ERH_T4_BC33_ORIGINAL_INFO={version:'V17.1_ORIGINAL_UI_DATA',source:'TAB2 
         const stale=rpcQueue.splice(0);stale.forEach(function(job){reply(job,false,null,'Phiên App Tổng đã thay đổi hoặc hết hạn. Vui lòng đăng nhập lại.');});
         readInFlight.clear();staticReads.clear();return;
       }
+      // PERF-GV01 V2: a plan read queued before bootstrap finished may now
+      // have an authorized one-shot result. Recheck immediately before dispatch.
+      // Do not reorder writes, extend TTL or serve a different session/epoch.
       const first=rpcQueue.shift(),jobs=[first];
+      if(first.epoch===rpcEpoch&&first.enqueuedAt<= (perfGV01Seed?.seededAt||0)){
+        const queuedPlans=perfGV01TakePlans(first);
+        if(queuedPlans){first.cached=true;reply(first,true,queuedPlans,'');scheduleRpc();return;}
+      }
       // Never start a delayed write after its iframe can already have timed out.
       // V35: catalogue LIST is a read request, never a business write. Do not expire it as a queued write.
       if(writeMethods.has(first.method)&&!first.catalogList&&Date.now()-first.enqueuedAt>10000){reply(first,false,null,catalogMethods.has(first.method)?'Lệnh lưu danh mục chưa được gửi do hàng đợi quá tải. Kiểm tra trạng thái trước khi thử lại.':'Dữ liệu trước đó vẫn đang tải; chưa gửi yêu cầu Giao việc. Vui lòng thử lại sau khi tải xong.');scheduleRpc();return;}
