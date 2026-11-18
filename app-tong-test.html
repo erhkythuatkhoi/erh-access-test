@@ -2847,6 +2847,8 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
  var labels=[['notstarted','Chưa thực hiện:'],['doing','Đang thực hiện:'],['overdue','Quá hạn:'],['done','Đã hoàn thành:'],['priority','Việc ưu tiên:'],['gv','GIAO VIỆC'],['report','BÁO CÁO CÔNG VIỆC']];
  var root=null,counts=null,groups=null,last=0,token='',loading=false,chosen='',pendingStatus='';
  var livePoll=false,liveCheckedAt=0,liveFingerprint='',liveSession='';
+ var opt02PendingSession='';
+ function opt02Drain(){var queued=opt02PendingSession;opt02PendingSession='';if(queued&&auth()===queued)refresh(true);}
  // V93 TEST: cross-session read-only detection; no auth, write or business-state changes.
  function liveStamp(batch){
   var rs=batch&&batch.results;
@@ -2876,6 +2878,7 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
             {id:'902',method:'ERH_BC33_getCompleted',args:[]}];
   function done(result){
    livePoll=false;
+   if(opt02PendingSession){opt02Drain();return;}
    if(!session||auth()!==session||token!==session)return;
    var stamp=liveStamp(result);if(!stamp)return; // Keep known-good data on a read failure.
    if(!liveFingerprint||liveSession!==session){liveFingerprint=stamp;liveSession=session;return;}
@@ -2884,8 +2887,8 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
        consume(result,session);liveNotifyBC33();}
    catch(_e){/* Keep existing snapshot; next read may retry. */}
   }
-  try{google.script.run.withSuccessHandler(done).withFailureHandler(function(){livePoll=false;})
-        .ERH_T4_BC33_originalBatch(jobs,session)}catch(_e){livePoll=false}
+  try{google.script.run.withSuccessHandler(done).withFailureHandler(function(){livePoll=false;opt02Drain();})
+        .ERH_T4_BC33_originalBatch(jobs,session)}catch(_e){livePoll=false;opt02Drain();}
  }
  var gvTasks=null; // GV-only detail snapshot from existing batch 901; BC33 code unchanged.
  // GV display enrichment only. Batch 902 holds committed BC33 detail lines; taskFast
@@ -3140,16 +3143,16 @@ body[data-erh-d15-module="GV"] #content.erh-gv-stats-mode > #erh-gv-stats-detail
   if(window.ERH_BC33_BOOT_SHARE_V90)window.ERH_BC33_BOOT_SHARE_V90.put(a.result,session);
   gvReportedLines=b.result.reportedLines;gvTasks=a.result.tasks;groups=next;counts={notstarted:next.notstarted.length,doing:next.doing.length,overdue:next.overdue.length,done:next.done.length,priority:next.priority.length};last=Date.now();liveFingerprint=liveStamp(result);liveSession=session;liveCheckedAt=last;display();send();if(moduleName()==='GV'&&['notstarted','doing','overdue','done','priority'].includes(chosen))gvView(chosen);note('Theo quyền tài khoản · '+new Date().toLocaleTimeString('vi-VN'));
  }
- function refresh(force){if(loading||!auth())return;var session=auth();if(!session){groups=null;counts=null;display();return}
+ function refresh(force){if(!auth())return;if(loading||livePoll){if(force||token!==auth())opt02PendingSession=auth();return;}var session=auth();if(!session){groups=null;counts=null;display();return}
   if(token!==session){if(window.ERH_BC33_DONE_SHARE_V20)window.ERH_BC33_DONE_SHARE_V20.clear();if(window.ERH_BC33_TASKS_SHARE_V20)window.ERH_BC33_TASKS_SHARE_V20.clear();if(window.ERH_BC33_BOOT_SHARE_V90)window.ERH_BC33_BOOT_SHARE_V90.clear();token=session;groups=null;counts=null;gvTasks=null;gvReportedLines=[];gvDetailCache.clear();gvDetailQueue=[];gvDetailPending.clear();gvDetailGeneration++;last=0;display()}
    if(!force&&counts)return;
    if(force){if(window.ERH_BC33_DONE_SHARE_V20)window.ERH_BC33_DONE_SHARE_V20.clear();if(window.ERH_BC33_TASKS_SHARE_V20)window.ERH_BC33_TASKS_SHARE_V20.clear();if(window.ERH_BC33_BOOT_SHARE_V90)window.ERH_BC33_BOOT_SHARE_V90.clear();gvDetailCache.clear();gvDetailQueue=[];gvDetailPending.clear();gvDetailGeneration++;}
   if(!window.google||!google.script||!google.script.run){note('Chưa kết nối dữ liệu thống kê');return}
   loading=true;note('Đang cập nhật thống kê…');
   var jobs=[{id:'901',method:'ERH_BC33_boot',args:[]},{id:'902',method:'ERH_BC33_getCompleted',args:[]}];
-  try{google.script.run.withSuccessHandler(function(r){loading=false;try{consume(r,session)}catch(e){groups=null;counts=null;display();note('Chưa xác minh được số liệu: '+text(e.message||e))}})
-  .withFailureHandler(function(e){loading=false;groups=null;counts=null;display();note('Không tải được thống kê: '+text(e&&e.message||e))})
-  .ERH_T4_BC33_originalBatch(jobs,session)}catch(e){loading=false;note('Lỗi thống kê: '+text(e.message||e))}
+  try{google.script.run.withSuccessHandler(function(r){loading=false;try{if(auth()===session&&!opt02PendingSession)consume(r,session)}catch(e){groups=null;counts=null;display();note('Chưa xác minh được số liệu: '+text(e.message||e))}finally{opt02Drain();}})
+  .withFailureHandler(function(e){loading=false;if(auth()===session&&!opt02PendingSession){groups=null;counts=null;display();note('Không tải được thống kê: '+text(e&&e.message||e))}opt02Drain();})
+  .ERH_T4_BC33_originalBatch(jobs,session)}catch(e){loading=false;if(auth()===session&&!opt02PendingSession)note('Lỗi thống kê: '+text(e.message||e));opt02Drain();}
  }
  function init(){if(root)return;var content=byId('content');if(!content||!content.parentNode)return;
   root=document.createElement('nav');root.id='erh-dash6';root.setAttribute('aria-label','Thống kê và thao tác Giao việc, Báo cáo công việc');
