@@ -1,7 +1,7 @@
 {
   "id": "/erh-access-test/cai-app-tong/erh-app-tong-pwa-v1",
-  "name": "ERH APP TỔNG – KỸ THUẬT KHỐI",
-  "short_name": "ERH APP TỔNG",
+  "name": "KỸ THUẬT KHỐI M&E PM",
+  "short_name": "KỸ THUẬT KHỐI M&E PM",
   "description": "Ứng dụng tổng hợp kỹ thuật Khối ERH: Giao việc, Báo cáo công việc, Báo cáo ngày",
   "start_url": "./pwa-start.html?source=pwa",
   "scope": "./",
