@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b68a9">
 <meta name="erh-ui-version" content="CV19_WORK_MENU_FINAL_20261123">
 <title>ERH – QUẢN LÝ DỰ ÁN</title>
-<meta name="qlda-pwa-build" content="V8-R17-UI19-SYNC1">
+<meta name="qlda-pwa-build" content="V8-R17-UI19-SYNC2-READ-GUARD">
 <script src="./ql-da-bridge-v8.js?v=8-r17-sync1"></script>
 <style>
 :root{--blue:#086bb0;--blue2:#128bd2;--navy:#15314f;--ink:#223a53;--muted:#718398;--bg:#f3f7fb;--panel:#fff;--stroke:#dce6f0;--sky:#edf6ff;--ok:#12804b;--amber:#a96509;--red:#bc474c;--shadow:0 8px 32px rgba(23,65,102,.065);--radius:16px;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);font-size:14px;color-scheme:light}
@@ -2514,6 +2514,16 @@ const pageNames={detail:'Chi tiết hồ sơ công việc',overview:'Tổng quan
 let user=null,activeProject='A',activePage='dashboard',toastTimer=null,pj31DetailReturnPage='records';
 /* PJ18: active account / project is an immutable cache key; all reads validated on server. */
 let pj18State=null,pj18Pending=null,pj18Seq=0;
+// V8 SYNC2: transient read failures must not masquerade as an empty database.
+let pj18ReadIssue=null;
+function PJ18_grantKey(){return user?JSON.stringify(user.projects.slice().sort().map(id=>[id,user.projectRoles?.[id]||''])):'';}
+function PJ18_readIssue(){return pj18ReadIssue?.key===PJ18_key()?pj18ReadIssue:null;}
+function PJ18_readMessage(){const i=PJ18_readIssue();return i?(PJ18_cached()?'Chưa làm mới được dữ liệu; đang hiển thị lần tải thành công gần nhất.':'Chưa tải được danh sách công việc.')+' ('+i.code+'). Bấm Làm mới để thử lại.':'';}
+function PJ18_showReadIssue(){
+ const root=$('dashboardStats');if(!root)return;
+ let msg=$('qlda-v8-read-warning');if(!msg){msg=document.createElement('div');msg.id='qlda-v8-read-warning';msg.setAttribute('role','status');msg.style.cssText='font-size:12px;color:#925b13;padding:4px 2px;flex:0 0 auto';root.after(msg);}
+ msg.textContent=PJ18_readMessage();msg.hidden=!msg.textContent;
+}
 /* PJ26: load a compact 10-column server summary as the Dashboard's FIRST and ONLY RPC.
  * Details are fetched lazily on click. Cache is per session + project, with stale replies ignored. */
 let pj26State=null,pj26Pending=null,pj26Seq=0,pj26Error='';
@@ -2552,7 +2562,7 @@ function PJ26_load(force=false){
  pj26Pending={key,promise:p};
 }
 
-function PJ18_reset(){pj18Seq++;pj18State=null;pj18Pending=null;PJ26_reset();CV42_reset();}
+function PJ18_reset(){pj18Seq++;pj18State=null;pj18Pending=null;pj18ReadIssue=null;PJ26_reset();CV42_reset();}
 function PJ18_key(){return user&&window.ERH_AUTH_token()?window.ERH_AUTH_token()+'|'+activeProject:null;}
 function PJ18_map(r){return {id:r.id,project:r.project,title:r.title||'',location:r.location||'',building:r.building||'',area:r.area||'',system:r.systemCode||'',systemName:r.systemName||'',category:r.category||'',categoryName:r.categoryName||'',groupCode:r.groupCode||'',groupName:r.groupName||'',priority:r.priority||'P4',status:r.status||'DRAFT',due:r.dueAt||'',route:r.route||'',owner:r.createdBy||'',assignee:'',desc:r.description||'',cause:r.cause||'',solution:r.solution||'',reportDate:r.reportDate||'',updatedAt:r.updatedAt||r.lastUpdatedAt||r.modifiedAt||'',reporterName:r.reporterName||'',reporterDept:r.reporterDept||'',createdAt:r.createdAt||''};}
 function PJ18_syncProjects(list){
@@ -2661,7 +2671,11 @@ function CV42_load(force=false){
  return promise;
 }
 
-function PJ18_cached(){return pj18State&&pj18State.key===PJ18_key()?pj18State:null;}
+function PJ18_cached(){
+ const c=pj18State;if(!c||c.key!==PJ18_key()||c.grantKey!==PJ18_grantKey())return null;
+ if(PJ18_readIssue()&&Date.now()-c.at>90000)return null;
+ return c;
+}
 function PJ18_fetch(force=false){
  const key=PJ18_key();if(!key)return Promise.reject(Error('SESSION_INVALID'));
  if(!force&&PJ18_cached()&&Date.now()-pj18State.at<30000)return Promise.resolve(pj18State);
@@ -2671,13 +2685,30 @@ function PJ18_fetch(force=false){
   if(seq!==pj18Seq||key!==PJ18_key())throw Error('STALE');
   if(!r||r.ok!==true||r.version!=='PJ18_READ_R17'||r.project!==selection||!Array.isArray(r.rows)||!Array.isArray(r.projects))throw Error(r?.code||'R17_READ_UNAVAILABLE');
   PJ18_syncProjects(r.projects);
+  if(seq!==pj18Seq||key!==PJ18_key())throw Error('STALE');
    if(r.rows.some(x=>!user.projects.includes(x.project)||x.status==='DELETED'||(selection!=='ALL'&&x.project!==selection)))throw Error('SCOPE_MISMATCH');
-  pj18State={key,rows:r.rows.map(PJ18_map),total:Number(r.total)||0,truncated:!!r.truncated,at:Date.now(),actorType:r.actorType};
-  PJ18_syncProjects(r.projects);
+  pj18State={key,grantKey:PJ18_grantKey(),rows:r.rows.map(PJ18_map),total:Number(r.total)||0,truncated:!!r.truncated,at:Date.now(),actorType:r.actorType};
+  pj18ReadIssue=null;
   if(r.actorType==='ADMIN'){user.label='Admin';$('sideCode').textContent=user.code+' · Admin';}
   if(activePage==='dashboard'||activePage==='records'){const rows=available();$('navRecordCount').textContent=pj18State.total;if(activePage==='dashboard')renderDashboard(rows);else renderList(rows);}
   return pj18State;
- }).catch(e=>{if(key===PJ18_key()&&String(e.message)!=='STALE')pj18State=null;throw e;}).finally(()=>{if(pj18Pending?.promise===promise)pj18Pending=null;});
+ }).catch(e=>{
+  const code=String(e?.message||'R17_READ_UNAVAILABLE');
+  if(seq!==pj18Seq||key!==PJ18_key()||code==='STALE')throw Error('STALE');
+  const accessFailure=['SESSION_INVALID','ACCESS_DENIED','PROJECT_ACCESS_DENIED','SCOPE_MISMATCH','WRONG_TEST_HOST','WRONG_TEST_DB'].includes(code);
+  // Only a known transport timeout/offline may keep a recent authorized RAM snapshot.
+  const transient=['R17_READ_TIMEOUT','R17_OFFLINE','RPC_TIMEOUT'].includes(code);
+  const keep=transient&&!!PJ18_cached()&&Date.now()-pj18State.at<=90000;
+  if(!keep)pj18State=null;
+  if(accessFailure){PJ26_reset();CV42_reset();}
+  pj18ReadIssue={key,code:code.slice(0,60)};
+  console.warn('[QLDA_V8_R17_READ]',JSON.stringify({code:pj18ReadIssue.code,retained:keep}));
+  if(code==='SESSION_INVALID'){window.ERH_AUTH_expired();throw e;}
+  if(activePage==='dashboard')renderDashboard(available());
+  else if(activePage==='records')renderList(available());
+  $('navRecordCount').textContent=PJ18_cached()?.total??PJ26_cached()?.counts.ALL??'…';
+  throw e;
+ }).finally(()=>{if(pj18Pending?.promise===promise)pj18Pending=null;});
  pj18Pending={key,promise};return promise;
 }
 function PJ18_load(force=false){
@@ -2687,9 +2718,9 @@ function PJ18_load(force=false){
  }
  PJ18_fetch(force).catch(e=>{
   if(String(e.message)==='STALE')return;
-  if(String(e.message)==='SESSION_INVALID'){window.ERH_AUTH_expired();return;}
-  if(activePage==='dashboard')$('dashboardIntro').textContent='Chưa tải được dữ liệu TEST. Hãy tải lại trang.';
-  if(activePage==='records')$('recordCountLabel').textContent='Chưa tải được dữ liệu TEST. Bấm Làm mới.';
+  if(String(e.message)==='SESSION_INVALID')return; // already expired by PJ18_fetch
+  if(activePage==='dashboard')PJ18_showReadIssue();
+  if(activePage==='records'&&PJ18_readIssue())$('recordCountLabel').textContent=PJ18_readMessage();
  });
 }
 function PJ18_dirtyForm(){
@@ -3054,6 +3085,7 @@ function renderDashboard(items){
   ['REWORK','Làm lại','Cần thực hiện lại','alert','red'],
   ['CLOSED','Đã đóng','Kết thúc xử lý','check','green']
  ];
+ PJ18_showReadIssue();
  $('dashboardStats').innerHTML=tabs.map(([code,label,foot,sym,cls])=>PJ19_tile(code==='DUE_SOON'?CV25_dueCount():(counts?(counts[code]??'—'):'—'),label,foot,sym,code,cls)).join('');
   const sync=$('pj25-sync');if(sync)sync.textContent=normalized?(normalized.verified?'Đã đồng bộ trạng thái hồ sơ + XL02':'Số hồ sơ gốc đã tải; '+normalized.unverified+' hồ sơ gửi chưa xác minh bước XL02 (đếm Cần tiếp nhận chỉ mang tính tạm thời).'):summary?'Đã tải thống kê hồ sơ gốc; đang tải Danh sách để đối chiếu XL02…':pj26Error?'Lỗi tải thống kê: '+pj26Error:'Đang đọc dữ liệu TEST…';
  const rows=[['DRAFT','Nháp','#94a3b8'],['WAITING','Cần tiếp nhận','#e9ad56'],['RECEIVED','Đã tiếp nhận','#609dbd'],['ASSIGNED','Đã phân công','#587fb0'],['IN_PROGRESS','Đang thực hiện','#348dd0'],['PENDING_APPROVAL','Chờ duyệt','#d88c9c'],['APPROVED','Đã duyệt','#48a77f'],['REWORK','Làm lại','#cc9467'],['CLOSED','Đã đóng','#48a77f']];
@@ -3182,6 +3214,14 @@ function CV30_description(r){
  return CV30_line('Hiện trạng',r.desc)+CV30_line('Nguyên nhân',r.cause)+CV30_line('Phương án',r.solution);
 }
 function renderList(items){
+ if(!PJ18_cached()){
+  const message=PJ18_readMessage()||'Đang tải danh sách công việc…';
+  const markup='<div class="empty-state"><p>'+esc(message)+'</p></div>';
+  $('recordRows').innerHTML='<tr><td colspan="8">'+markup+'</td></tr>';
+  $('mobileRecords').innerHTML=markup;
+  $('recordCountLabel').textContent=message;
+  return;
+ }
  items=CV42_displayRows(items);
  CV31_syncFilters(items);
  CV34_syncAvailableFields(items);
@@ -3199,7 +3239,7 @@ function renderList(items){
   $('recordRows').innerHTML='<tr><td colspan="8"><div class="empty-state">'+icon('search')+'<h3>Không tìm thấy hồ sơ</h3><p>Thử thay đổi bộ lọc hoặc từ khóa.</p></div></td></tr>';
   $('mobileRecords').innerHTML='<div class="empty-state">'+icon('search')+'<h3>Không tìm thấy hồ sơ</h3><p>Thử thay đổi bộ lọc hoặc từ khóa.</p></div>';
  }
- $('recordCountLabel').textContent=`${result.length} hồ sơ QLVH TEST${result.length!==items.length?' (đã lọc)':''}${PJ18_cached()?.truncated?' · Danh sách chỉ tải 400 hồ sơ đầu tiên; số tổng hợp ở Dashboard là toàn bộ':''}${CV42_hint()} · UI19 SCROLL`;
+ $('recordCountLabel').textContent=`${result.length} hồ sơ QLVH TEST${result.length!==items.length?' (đã lọc)':''}${PJ18_cached()?.truncated?' · Danh sách chỉ tải 400 hồ sơ đầu tiên; số tổng hợp ở Dashboard là toàn bộ':''}${CV42_hint()} · UI19 SCROLL${PJ18_readIssue()?' · '+PJ18_readMessage():''}`;
 
 }
 /** TD16 — live, read-only TEST queues. No approval write is exposed. */
@@ -3750,12 +3790,17 @@ function TD01_rpc(method,args,ms=45000){return new Promise(resolve=>{
   if(r&&r.ok===false&&typeof r.code==='string')metric.code=r.code;
   console.info('[QLVH_PJ30_RPC]',JSON.stringify(metric));resolve(r);
  };
- const failure=code=>finish(upload?{ok:false,code}:null);
- const timer=setTimeout(()=>failure('UPLOAD_TIMEOUT'),upload?Math.max(ms,90000):ms);
- try{if(navigator.onLine===false){failure('UPLOAD_OFFLINE');return;}
-  const run=google.script.run.withSuccessHandler(finish).withFailureHandler(()=>failure('UPLOAD_RPC_ERROR'));
+ const r17=method==='QLVH_PJ18_READ_R17';
+ const failure=code=>finish(upload||r17?{ok:false,code}:null);
+ const timer=setTimeout(()=>failure(r17?'R17_READ_TIMEOUT':'UPLOAD_TIMEOUT'),upload?Math.max(ms,90000):ms);
+ try{if(navigator.onLine===false){failure(r17?'R17_OFFLINE':'UPLOAD_OFFLINE');return;}
+  const run=google.script.run.withSuccessHandler(finish).withFailureHandler(err=>{
+   if(!r17){failure('UPLOAD_RPC_ERROR');return;}
+   const code=String(err?.message||'');
+   failure(['RPC_TIMEOUT','RPC_UNAVAILABLE','RPC_FUNCTION_MISSING','RPC_DENIED','RPC_FAILED','RPC_SERIALIZATION','BRIDGE_READY_TIMEOUT','SESSION_INVALID','ACCESS_DENIED','PROJECT_ACCESS_DENIED'].includes(code)?code:'R17_RPC_ERROR');
+  });
   run[method](...args);
- }catch(e){failure('UPLOAD_RPC_ERROR');}
+ }catch(e){failure(r17?'R17_RPC_ERROR':'UPLOAD_RPC_ERROR');}
 });}
 function TD01_filePayload(x){return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=reject;r.onload=()=>{const b64=String(r.result).split(',')[1];if(!b64){reject(Error('FILE_INVALID'));return;}resolve({name:x.name,ext:x.ext,rid:x.rid,b64});};r.readAsDataURL(x.file);});}
 function TD01_failAccess(r){if(r&&['SESSION_INVALID','ACCESS_DENIED','PROJECT_ACCESS_DENIED'].includes(r.code)){TD01_reset();if(r.code==='SESSION_INVALID')window.ERH_AUTH_expired();else TD01_msg('Không có quyền truy cập.');return true;}return false;}
