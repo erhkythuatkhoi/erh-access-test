@@ -1,16 +1,19 @@
 (()=>{'use strict';
 const root='/erh-access-test/cai-app-qlda/';
 const status=document.getElementById('status'),btn=document.getElementById('install'),open=document.getElementById('open');
-const say=t=>status.textContent=t;
+const launchStatus=document.getElementById('launch-status'),launchFallback=document.getElementById('launch-fallback');
+const say=t=>{status.textContent=t;if(document.documentElement.classList.contains('qlda-start'))launchStatus.textContent=t;};
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 let target=null, installed=false, readySW=false;
 if(![root,root+'index.html'].includes(location.pathname)){say('Sai đường dẫn QLDA. Không đăng ký Service Worker.');return;}
 try{const u=new URL(window.QLDA_CONFIG?.TARGET_URL||'');if(u.protocol==='https:'&&u.hostname==='script.google.com'&&!u.username&&!u.password&&/^\/macros\/s\/[^/]+\/exec$/.test(u.pathname))target=u;}catch(_){}
-if(!target){say('Chưa có URL QLDA hợp lệ.');return;}
+if(!target){say('Chưa có URL QLDA hợp lệ.');launchFallback.hidden=false;return;}
 open.href=target.href;open.removeAttribute('aria-disabled');
 const launchRequested=new URLSearchParams(location.search).get('source')==='pwa';
 if(standalone()&&launchRequested){
  say('Đang mở ứng dụng QLDA…');
+ launchFallback.href=target.href;launchFallback.textContent='Mở lại ứng dụng QLDA';
+ setTimeout(()=>{launchFallback.hidden=false;},10000);
  location.replace(target.href);
  return;
 }

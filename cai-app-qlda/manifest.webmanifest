@@ -3,7 +3,7 @@
   "name": "ERH – QUẢN LÝ DỰ ÁN",
   "short_name": "QUẢN LÝ DỰ ÁN",
   "description": "ERH – Quản lý vận hành dự án",
-  "start_url": "/erh-access-test/cai-app-qlda/index.html?source=pwa",
+  "start_url": "/erh-access-test/cai-app-qlda/pwa-start.html",
   "scope": "/erh-access-test/cai-app-qlda/",
   "display": "standalone",
   "background_color": "#f4f7fb",

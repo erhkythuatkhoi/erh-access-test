@@ -1,7 +1,8 @@
-BỘ CÀI QLDA V5 – 25/11/2026
-1. Chỉ thay file trong cai-app-qlda. Không sửa App Tổng.
-2. Giữ nguyên Manifest, ID, icon, URL và scope V4.
-3. Khi mở icon QLDA (standalone, start_url source=pwa), tự chuyển tới Web App trong cùng cửa sổ. Trang cài thông thường không tự chuyển; sự kiện appinstalled không tự chuyển.
-4. Nếu trình duyệt mở ngoài scope, thanh địa chỉ và thông báo Apps Script có thể xuất hiện.
-5. Sau Push và Pages thành công, đóng/mở lại icon QLDA. Nếu vẫn hiện V4, mở trang cài bằng Chrome thường và Ctrl+F5. Không gỡ App Tổng hoặc xóa cache chung.
-6. Kiểm thử cả hai icon; nếu trùng, dừng và cân nhắc repository riêng.
+BỘ CÀI QLDA V6 – 25/11/2026 – TÁCH TRANG KHỞI CHẠY
+1. Chỉ chép 13 file vào cai-app-qlda. Không sửa thư mục gốc, cai-app-tong, GitHub Pages hoặc Apps Script.
+2. Giữ nguyên ID, scope, tên, icon và URL V5. Manifest đổi start_url sang pwa-start.html (trang mở riêng, không có giao diện cài).
+3. Icon V4/V5 chưa nhận manifest mới vẫn dùng index.html?source=pwa; V6 ẩn trang cài trước khi hiển thị và tự chuyển URL khi chạy standalone.
+4. Khi cài từ Chrome thường, index.html vẫn là trang cài đặt; không tự chuyển trang sau khi cài.
+5. Sau khi Pages xuất bản, mở trang cài QLDA bằng Chrome thường và Ctrl+F5. Đóng/mở icon QLDA. Manifest cũ có thể cập nhật chậm. Không gỡ App Tổng, không xóa cache chung.
+6. V6 không thay đổi nghiệp vụ. Thanh địa chỉ ngoài scope và thông báo Apps Script vẫn có thể xuất hiện vì Web App khác origin.
+7. Kiểm tra cả hai icon. Chưa kiểm thử cài đặt thực tế trên thiết bị.

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0873c3"><title>ERH – QUẢN LÝ DỰ ÁN</title>
+<style>body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;font:500 16px/1.5 system-ui,Arial,sans-serif;background:#f4f8fc;color:#173f67;text-align:center}a{color:#0873c3;font-weight:700}[hidden]{display:none}</style></head>
+<body><div><p id="status" role="status">Đang mở ứng dụng QLDA…</p><p id="fallback" hidden><a id="open" href="./">Mở trang cài QLDA</a></p></div>
+<script src="./launcher-config.js?v=6"></script><script>
+(function(){'use strict';
+ const status=document.getElementById('status'),fallback=document.getElementById('fallback'),open=document.getElementById('open');
+ try{
+   const u=new URL(window.QLDA_CONFIG?.TARGET_URL||'');
+   if(location.pathname!=='/erh-access-test/cai-app-qlda/pwa-start.html'||u.protocol!=='https:'||u.hostname!=='script.google.com'||u.username||u.password||!/^\/macros\/s\/[^/]+\/exec$/.test(u.pathname))throw new Error('BAD_CONFIG');
+   open.href=u.href;open.textContent='Mở ứng dụng QLDA';
+   setTimeout(()=>{fallback.hidden=false;},10000);
+   location.replace(u.href);
+ }catch(_){status.textContent='Không mở được QLDA. Kiểm tra cấu hình đường dẫn.';fallback.hidden=false;}
+})();
+</script></body></html>
