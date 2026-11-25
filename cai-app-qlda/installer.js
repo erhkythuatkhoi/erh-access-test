@@ -11,7 +11,7 @@ if(!target){say('Chưa có URL QLDA hợp lệ.');launchFallback.hidden=false;re
 open.href=target.href;open.removeAttribute('aria-disabled');
 const launchRequested=new URLSearchParams(location.search).get('source')==='pwa';
 if(standalone()&&launchRequested){
- say('Đang mở ứng dụng QLDA…');
+ say('');
  launchFallback.href=target.href;launchFallback.textContent='Mở lại ứng dụng QLDA';
  setTimeout(()=>{launchFallback.hidden=false;},10000);
  location.replace(target.href);

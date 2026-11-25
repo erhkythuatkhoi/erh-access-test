@@ -1,7 +1,7 @@
 /* QLDA only – no changes to other apps, caches or registrations. */
-const CACHE='erh-qlda-installer-v6-launch';
+const CACHE='erh-qlda-installer-v7-launch';
 const SCOPE='/erh-access-test/cai-app-qlda/';
-const FILES=['./index.html','./index.html?source=pwa','./pwa-start.html','./installer.js?v=6','./launcher-config.js?v=6','./manifest.webmanifest?v=6','./manifest.webmanifest?v=4','./icon-192.png?v=4','./icon-512.png?v=4','./icon-maskable-512.png?v=4','./apple-touch-icon.png?v=4','./favicon.png?v=4'];
+const FILES=['./index.html','./index.html?source=pwa','./pwa-start.html','./installer.js?v=7','./launcher-config.js?v=7','./manifest.webmanifest?v=6','./manifest.webmanifest?v=4','./icon-192.png?v=4','./icon-512.png?v=4','./icon-maskable-512.png?v=4','./apple-touch-icon.png?v=4','./favicon.png?v=4'];
 const allowed=new URL(self.registration.scope).pathname===SCOPE;
 self.addEventListener('install',e=>{if(!allowed){e.waitUntil(Promise.reject(new Error('QLDA_WRONG_SCOPE')));return;}e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{if(allowed)e.waitUntil(self.clients.claim());});
