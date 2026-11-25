@@ -1,4 +1,6 @@
-window.QLDA_CONFIG = Object.freeze({
-  TARGET_URL: "https://script.google.com/macros/s/AKfycbyrOEdLZ84ATNnGTiu6XgAJbu1n59Gy7cLZ_byd7_OqTL8OZPrhsKdO-axQ-z03UcJqfA/exec",
-  VERSION: "20261125-v3"
-});
+window.LAUNCHER_CONFIG = {
+  "APP_NAME": "ERH APP TỔNG – KỸ THUẬT KHỐI",
+  "SHORT_NAME": "ERH APP TỔNG",
+  "TARGET_URL": "https://erhkythuatkhoi.github.io/erh-access-test/app-tong-test.html",
+  "VERSION": "1.0.0"
+};

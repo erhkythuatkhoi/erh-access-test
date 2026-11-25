@@ -1,7 +1,0 @@
-BỘ CÀI QLDA TEST V3 – 25/11/2026
-1. URL Web App QLDA TEST /exec đã điền theo đường dẫn người dùng cung cấp. Không cần sửa launcher-config.js. Chưa kiểm tra truy cập thực tế.
-2. Chỉ upload thư mục cai-app-qlda vào nguồn xuất bản Pages; không ghi đè file gốc hoặc cai-app-tong.
-3. Đường dẫn dự kiến: https://erhkythuatkhoi.github.io/erh-access-test/cai-app-qlda/
-4. V2 khóa đăng ký SW ngoài đúng thư mục; cache riêng, không xóa cache nào; không dùng cache ứng dụng khác; không sửa đăng nhập.
-5. URL Apps Script khác origin có thể mở ngoài cửa sổ standalone.
-6. Chưa deploy, chưa test thiết bị. Kiểm tra cả hai icon cùng tồn tại và mở đúng app trước khi PASS.
