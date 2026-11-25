@@ -1,18 +1,1 @@
-<!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0873c3"><title>ERH – QUẢN LÝ DỰ ÁN</title>
-<style>html,body{margin:0;min-height:100%;background:#edf6fd}body{font:500 16px/1.5 system-ui,Arial,sans-serif;color:#173f67}#fallback{position:fixed;inset:0;display:grid;place-content:center;text-align:center;padding:18px}#fallback[hidden]{display:none}a{color:#0873c3;font-weight:700}</style>
-<script>
-(function(){'use strict';
- // Generated from launcher-config.js; no external JS fetch on the normal launch path.
- const target="https://script.google.com/macros/s/AKfycbyrOEdLZ84ATNnGTiu6XgAJbu1n59Gy7cLZ_byd7_OqTL8OZPrhsKdO-axQ-z03UcJqfA/exec";
- let invalid=false;
- try{
-   const u=new URL(target);
-   if(location.pathname!=='/erh-access-test/cai-app-qlda/pwa-start.html'||u.protocol!=='https:'||u.hostname!=='script.google.com'||u.username||u.password||!/^\/macros\/s\/[^/]+\/exec$/.test(u.pathname))throw new Error('BAD_CONFIG');
-   location.replace(u.href);
- }catch(_){invalid=true;}
- function showFallback(){const box=document.getElementById('fallback');if(!box)return;const link=document.getElementById('retry');if(!invalid){link.href=target;link.textContent='Mở lại ứng dụng QLDA';}box.hidden=false;}
- if(invalid)document.addEventListener('DOMContentLoaded',showFallback,{once:true});
- else setTimeout(showFallback,10000);
-})();
-</script></head><body><div id="fallback" hidden><p>Chưa mở được ứng dụng QLDA.</p><a id="retry" href="./">Kiểm tra trang cài QLDA</a></div></body></html>
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0873c3"><title>ERH – QUẢN LÝ DỰ ÁN</title><script>location.replace('./qlda-ui-v8.html');</script></head><body><noscript><a href="./qlda-ui-v8.html">Mở QLDA</a></noscript></body></html>

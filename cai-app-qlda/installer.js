@@ -6,7 +6,7 @@ const say=t=>{status.textContent=t;if(document.documentElement.classList.contain
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 let target=null, installed=false, readySW=false;
 if(![root,root+'index.html'].includes(location.pathname)){say('Sai đường dẫn QLDA. Không đăng ký Service Worker.');return;}
-try{const u=new URL(window.QLDA_CONFIG?.TARGET_URL||'');if(u.protocol==='https:'&&u.hostname==='script.google.com'&&!u.username&&!u.password&&/^\/macros\/s\/[^/]+\/exec$/.test(u.pathname))target=u;}catch(_){}
+try{const u=new URL(window.QLDA_CONFIG?.TARGET_URL||'');if(u.protocol==='https:'&&u.origin===location.origin&&!u.username&&!u.password&&u.pathname===root+'qlda-ui-v8.html'&&!u.search&&!u.hash)target=u;}catch(_){}
 if(!target){say('Chưa có URL QLDA hợp lệ.');launchFallback.hidden=false;return;}
 open.href=target.href;open.removeAttribute('aria-disabled');
 const launchRequested=new URLSearchParams(location.search).get('source')==='pwa';

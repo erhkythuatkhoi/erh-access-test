@@ -1,4 +1,4 @@
 window.QLDA_CONFIG = Object.freeze({
-  TARGET_URL: "https://script.google.com/macros/s/AKfycbyrOEdLZ84ATNnGTiu6XgAJbu1n59Gy7cLZ_byd7_OqTL8OZPrhsKdO-axQ-z03UcJqfA/exec",
-  VERSION: "20261125-v7"
+  TARGET_URL: "https://erhkythuatkhoi.github.io/erh-access-test/cai-app-qlda/qlda-ui-v8.html",
+  VERSION: "20261125-v8"
 });
