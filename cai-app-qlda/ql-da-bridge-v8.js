@@ -1,0 +1,26 @@
+/* QLDA V8 TEST only. No cache/storage of credentials or tokens by this adapter. */
+(()=>{'use strict';
+const origin='https://erhkythuatkhoi.github.io',path='/erh-access-test/cai-app-qlda/qlda-ui-v8.html',channel='QLDA_V8_UI';
+const methods=new Set(["ERH_AUTH_changePassword","ERH_AUTH_checkSession","ERH_AUTH_login","ERH_AUTH_logout","QLVH_CV08_FILE_CANCEL","QLVH_CV08_FILE_GET","QLVH_CV08_FILE_LIST","QLVH_CV08_FILE_RENAME","QLVH_CV08_FILE_REPLACE","QLVH_CV08_FILE_UPLOAD","QLVH_CV08_KIND_GET","QLVH_CV08_KIND_SET","QLVH_CV08_LIST","QLVH_CV08_SAVE","QLVH_HS12_DELETE","QLVH_HS12_FILE_CANCEL","QLVH_HS12_FILE_GET","QLVH_HS12_FILE_LIST","QLVH_HS12_FILE_RENAME","QLVH_HS12_FILE_UPLOAD","QLVH_HS12_LIST","QLVH_HS12_SAVE","QLVH_HS12_STAFF","QLVH_NS01_BUNDLE","QLVH_NS02A_SAVE_PROFILE","QLVH_NS02B_CREATE","QLVH_NS03A_LIST","QLVH_NS03A_PREPARE","QLVH_NS04_LIST","QLVH_NS04_REVOKE_GRANT","QLVH_NS04_SAVE_GRANT","QLVH_NS04_SAVE_STAFF","QLVH_NS04_SET_INITIAL_PASSWORD","QLVH_PJ18_READ","QLVH_PJ18_STAFF","QLVH_PJ26_DASHBOARD","QLVH_TD01_CREATE","QLVH_TD01_DRAFT_OPEN","QLVH_TD01_DRAFT_UPDATE","QLVH_TD01_FILE_GET","QLVH_TD01_FILE_LIST","QLVH_TD01_FILE_UPLOAD","QLVH_TD01_LIST","QLVH_TD08_CATALOG_SAVE","QLVH_TD16_PENDING_LIST","QLVH_TD16_SUBMIT","QLVH_TD17_DRAFT_DELETE","QLVH_XK01_FILE_GET","QLVH_XK01_QUEUE","QLVH_XK01_RECIPIENTS","QLVH_XK01_REPLY","QLVH_XK01_SEND","QLVH_XK01_SUPPLEMENT","QLVH_XL02_APPLY","QLVH_XL02_LIST","QLVH_XL03_FILE_ADD","QLVH_XL03_FILE_DELETE","QLVH_XL03_FILE_GET","QLVH_XL03_PLAN_SET","QLVH_XL03_REPORT_LIST","QLVH_XL03_REPORT_RECEIPT","QLVH_XL03_REPORT_SAVE","QLVH_XL03_SUBMIT_REVIEW"]);
+if(location.origin!==origin||location.pathname!==path||window.top!==window)return;
+if(window.google?.script?.run)return;
+const random=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),x=>x.toString(16).padStart(2,'0')).join('');
+const nonce=random(32),pending=new Map();let frame,peer,peerOrigin,ready=false,failed=false,readyTimer;
+const googleOrigin=o=>{try{const u=new URL(o);return u.protocol==='https:'&&(u.hostname==='script.google.com'||u.hostname==='script.googleusercontent.com'||/^[a-z0-9-]+-script\.googleusercontent\.com$/.test(u.hostname));}catch(_){return false;}};
+function descendant(w){try{for(let i=0;i<10&&w;i++){if(w===frame?.contentWindow)return true;const p=w.parent;if(p===w||p===window)return false;w=p;}}catch(_){}return false;}
+function settle(id,ok,value){const p=pending.get(id);if(!p)return;pending.delete(id);clearTimeout(p.timer);queueMicrotask(()=>{if(ok)p.success?.(value);else p.failure?.(new Error(value));});}
+function transmit(id){const p=pending.get(id);if(!p||!ready||p.sent)return;p.sent=true;try{peer.postMessage({channel,nonce,type:'RPC',id,method:p.method,args:p.args},peerOrigin);p.args=null;}catch(_){settle(id,false,'RPC_SEND_FAILED');}}
+window.addEventListener('message',e=>{
+ const d=e.data;if(failed||!d||d.channel!==channel||d.nonce!==nonce||!googleOrigin(e.origin)||!e.source)return;
+ if(d.type==='READY'&&!ready&&descendant(e.source)){peer=e.source;peerOrigin=e.origin;ready=true;clearTimeout(readyTimer);peer.postMessage({channel,nonce,type:'ACK'},peerOrigin);console.info('[QLDA_V8_BRIDGE] READY');for(const id of pending.keys())transmit(id);return;}
+ if(!ready||e.source!==peer||e.origin!==peerOrigin)return;
+ if(d.type==='READY'){peer.postMessage({channel,nonce,type:'ACK'},peerOrigin);return;}
+ if(d.type==='RESULT')settle(d.id,d.ok===true,d.ok===true?d.value:(d.code||'RPC_FAILED'));
+});
+function start(){if(frame)return;const u=new URL("https://script.google.com/macros/s/AKfycbyrOEdLZ84ATNnGTiu6XgAJbu1n59Gy7cLZ_byd7_OqTL8OZPrhsKdO-axQ-z03UcJqfA/exec");u.searchParams.set('qldaBridge','v8ui');u.searchParams.set('nonce',nonce);frame=document.createElement('iframe');frame.title='Kết nối kỹ thuật QLDA';frame.tabIndex=-1;frame.setAttribute('aria-hidden','true');frame.referrerPolicy='no-referrer';frame.style.cssText='position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;visibility:hidden;pointer-events:none';frame.src=u.href;document.body.appendChild(frame);readyTimer=setTimeout(()=>{if(ready)return;failed=true;frame.remove();for(const id of pending.keys())settle(id,false,'BRIDGE_READY_TIMEOUT');console.warn('[QLDA_V8_BRIDGE] READY_TIMEOUT');},30000);}
+function call(method,args,success,failure){if(failed||!methods.has(method)||pending.size>=16||navigator.onLine===false){queueMicrotask(()=>failure?.(new Error('RPC_UNAVAILABLE')));return;}const id=random(16),timer=setTimeout(()=>settle(id,false,'RPC_TIMEOUT'),100000);pending.set(id,{method,args,success,failure,timer,sent:false});if(ready)transmit(id);}
+function runner(success,failure){const o=Object.create(null);o.withSuccessHandler=fn=>runner(fn,failure);o.withFailureHandler=fn=>runner(success,fn);for(const m of methods)o[m]=(...args)=>call(m,args,success,failure);return Object.freeze(o);}
+window.google={script:{run:runner(null,null)}};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.addEventListener('pagehide',()=>{for(const id of pending.keys()){const p=pending.get(id);clearTimeout(p.timer);}pending.clear();});
+})();
