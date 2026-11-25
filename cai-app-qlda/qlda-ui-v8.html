@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#0b68a9">
 <meta name="erh-ui-version" content="CV19_WORK_MENU_FINAL_20261123">
 <title>ERH – QUẢN LÝ DỰ ÁN</title>
-<script src="./ql-da-bridge-v8.js?v=8"></script>
+<meta name="qlda-pwa-build" content="V8-R17-UI19-SYNC1">
+<script src="./ql-da-bridge-v8.js?v=8-r17-sync1"></script>
 <style>
 :root{--blue:#086bb0;--blue2:#128bd2;--navy:#15314f;--ink:#223a53;--muted:#718398;--bg:#f3f7fb;--panel:#fff;--stroke:#dce6f0;--sky:#edf6ff;--ok:#12804b;--amber:#a96509;--red:#bc474c;--shadow:0 8px 32px rgba(23,65,102,.065);--radius:16px;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);font-size:14px;color-scheme:light}
 *{box-sizing:border-box}body{margin:0;background:var(--bg)}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.52}a{color:inherit;text-decoration:none}svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}h1,h2,h3,h4,p{margin-top:0}h1{font-size:27px;letter-spacing:-.6px}h2{font-size:19px;letter-spacing:-.25px}h3{font-size:15px}p{line-height:1.58}.muted{color:var(--muted)}.small{font-size:12px}.tiny{font-size:11px}.hidden{display:none!important}.divider{height:1px;background:var(--stroke);margin:19px 0}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;color:#7890a9}.demo-chip{font-size:10px;font-weight:800;letter-spacing:.8px;white-space:nowrap;border-radius:999px;padding:4px 8px;color:#926719;background:#fff4d9;border:1px solid #ecd7a2}.status-pill{font-size:11px;border:1px solid var(--stroke);border-radius:999px;padding:5px 9px;font-weight:700;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.status-pill:before{content:"";width:6px;height:6px;background:#72ac81;border-radius:50%}.btn{border:1px solid transparent;border-radius:10px;padding:10px 15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:41px;font-weight:750;transition:background .2s,transform .1s;white-space:nowrap}.btn:active{transform:scale(.98)}.btn-primary{background:var(--blue);color:white}.btn-primary:hover{background:#045b97}.btn-light{background:#f1f6fb;color:#24547e;border:1px solid #dbe7f2}.btn-light:hover{background:#e5f0f9}.btn-white{background:white;border-color:var(--stroke);color:var(--ink)}.btn-subtle{background:transparent;color:#58728b;padding:8px}.btn:focus-visible,.nav-link:focus-visible{outline:3px solid #86cdf7;outline-offset:2px}.field label{display:block;font-size:12px;font-weight:700;color:#4d6680;margin-bottom:7px}.field input,.field select,.field textarea{width:100%;background:#fff;border:1px solid #d5e2ee;border-radius:10px;padding:11px 12px;min-height:42px;outline:none;color:var(--ink)}.field input:focus,.field select:focus,.field textarea:focus{border-color:#318cd5;box-shadow:0 0 0 3px #d8ecfb}.field textarea{min-height:106px;resize:vertical}.field input:disabled{background:#f2f5f8;color:#8393a1}.required:after{content:" *";color:var(--red)}.test-note{display:flex;align-items:flex-start;gap:9px;background:#fff8e8;color:#895d14;border:1px solid #f1e0ad;border-radius:11px;padding:11px 13px;font-size:12px;line-height:1.48}.test-note svg{width:17px;height:17px;margin-top:1px}.panel{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -1154,6 +1155,18 @@ body.preview-compact #application .stat-card.pj19-stat{min-height:63px;padding:7
   #page-records .cv34-search-wrap svg{top:12px}
 }
 </style>
+<style id="qlvh-ui19-scroll-only">
+/* UI19: Danh sach cong viec hien thi tat ca ho so da tai; chi cuon doc, khong phan trang. */
+#page-records .pagination,
+#page-records #recordPagination,
+#page-records #recordPager,
+#page-records [data-pagination]{display:none!important}
+@media (min-width:1001px){
+  #page-records .table-scroller,
+  #page-records .mobile-records{scrollbar-width:thin;scrollbar-gutter:stable;overscroll-behavior-y:contain}
+  #page-records .records-table thead th{position:sticky;top:0;z-index:2}
+}
+</style>
 <style id="cv37-unify-ui-and-dashboard-list">
 /* CV37 – consistent surface typography, forms, buttons and tables across all modules.
    Presentation only; do not adjust application data, handlers, authorization or save routes. */
@@ -2262,7 +2275,7 @@ body.preview-compact #application .stat-card.pj19-stat{min-height:63px;padding:7
         <article class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>Hồ sơ cập nhật gần đây</h2><p>Hồ sơ từ CSDL QLVH TEST theo phạm vi được cấp</p></div><button class="link-button" data-go="records">Đến danh sách</button></div><div id="recentList" class="panel-body"></div></article>
 </div>
 </section>
-      <section id="page-records" class="page">
+      <section id="page-records" class="page" data-list-build="UI19-SCROLL-ONLY-NO-PAGINATION">
         <div class="page-intro"><div><h1>Danh sách công việc</h1></div><div class="intro-actions"><button id="refreshDemo" class="btn btn-white"><svg><use href="#i-refresh"/></svg> Làm mới</button><button class="btn btn-primary" data-go="new"><svg><use href="#i-plus"/></svg> Báo cáo mới</button></div></div>
         <!-- CV34: 2 hang loc co dinh khi cuon (PC), ket hop tim kiem/8 bo loc/ngay-thang-nam. -->
         <div class="cv34-filter-sticky" id="cv34-filter-sticky" role="search" aria-label="Tìm kiếm và lọc danh sách công việc">
@@ -2284,7 +2297,7 @@ body.preview-compact #application .stat-card.pj19-stat{min-height:63px;padding:7
             <div class="field cv34-reset-cell"><label aria-hidden="true">&nbsp;</label><button id="resetFilters" type="button" class="btn btn-white"><svg><use href="#i-filter"/></svg> Xóa lọc</button></div>
           </div>
         </div>
-        <article class="panel list-panel"><div class="table-scroller"><table class="records-table"><thead><tr><th scope="col">TT</th><th scope="col">Tòa / Khu vực / Vị trí</th><th scope="col">Hệ thống / Hạng mục / Loại thiết bị</th><th scope="col">Hiện trạng / Nguyên nhân / Phương án</th><th scope="col">Phân loại</th><th scope="col">Hạn xử lý</th><th scope="col">Tình trạng</th><th scope="col">Xem/Sửa/Xóa</th></tr></thead><tbody id="recordRows"></tbody></table></div><div id="mobileRecords" class="mobile-records"></div><div class="list-bottom"><span id="recordCountLabel">Đang tải dữ liệu...</span><div class="pagination"><button id="prevRecords" class="btn btn-white">Trước</button><span id="listPageNum" class="small">1 / 1</span><button id="nextRecords" class="btn btn-white">Sau</button></div></div></article>
+        <article class="panel list-panel"><div class="table-scroller"><table class="records-table"><thead><tr><th scope="col">TT</th><th scope="col">Tòa / Khu vực / Vị trí</th><th scope="col">Hệ thống / Hạng mục / Loại thiết bị</th><th scope="col">Hiện trạng / Nguyên nhân / Phương án</th><th scope="col">Phân loại</th><th scope="col">Hạn xử lý</th><th scope="col">Tình trạng</th><th scope="col">Xem/Sửa/Xóa</th></tr></thead><tbody id="recordRows"></tbody></table></div><div id="mobileRecords" class="mobile-records"></div><div class="list-bottom"><span id="recordCountLabel">Đang tải dữ liệu...</span></div></article>
       </section>
       <section id="page-new" class="page"><div class="page-intro"><h1><svg aria-hidden="true"><use href="#i-plus"/></svg>Cập nhật công việc</h1><div class="td08-reporter"><span><strong>Người báo cáo:</strong> <span id="td01-reporter-v7">—</span></span><span><strong>Bộ phận:</strong> <span id="td08-dept">—</span></span></div></div><div class="panel form-box"><form id="draftDemoForm">
 <div class="cv08-common" id="cv08-common">
@@ -2498,7 +2511,7 @@ const samples=[
 ];
 const statusMeta={DRAFT:['Nháp','draft'],SUBMITTED:['Đã gửi','submit'],WAITING:['Cần tiếp nhận','submit'],RECEIVED:['Đã tiếp nhận','pending'],ASSIGNED:['Đã phân công','progress'],IN_PROGRESS:['Đang thực hiện','progress'],PENDING_APPROVAL:['Chờ duyệt','pending'],REWORK:['Làm lại','rework'],APPROVED:['Đã duyệt','done'],PENDING_LOCAL_REVIEW:['Chờ BQL duyệt','pending'],PENDING_KHOI_REVIEW:['Chờ Khối duyệt','pending'],REWORK_REQUIRED:['Yêu cầu làm lại','rework'],CLOSED:['Đã đóng','done']};
 const pageNames={detail:'Chi tiết hồ sơ công việc',overview:'Tổng quan',dashboard:'Tổng quan công việc',processwork:'Xử lý công việc',reportwork:'Báo cáo công việc',records:'Danh sách công việc',new:'Cập nhật công việc',pending:'Chờ phê duyệt',projects:'Danh mục dự án',staff:'Nhân sự',access:'Phân quyền',hoso:'Hồ sơ',water:'Ghi chỉ số nước',maintenance:'Bảo trì – Kiểm tra',reports:'Báo cáo vận hành'};
-let user=null,activeProject='A',activePage='dashboard',listPage=1,toastTimer=null,pj31DetailReturnPage='records';
+let user=null,activeProject='A',activePage='dashboard',toastTimer=null,pj31DetailReturnPage='records';
 /* PJ18: active account / project is an immutable cache key; all reads validated on server. */
 let pj18State=null,pj18Pending=null,pj18Seq=0;
 /* PJ26: load a compact 10-column server summary as the Dashboard's FIRST and ONLY RPC.
@@ -2654,9 +2667,9 @@ function PJ18_fetch(force=false){
  if(!force&&PJ18_cached()&&Date.now()-pj18State.at<30000)return Promise.resolve(pj18State);
  if(pj18Pending&&pj18Pending.key===key)return pj18Pending.promise;
  const token=window.ERH_AUTH_token(),selection=activeProject,seq=++pj18Seq;
- const promise=TD01_rpc('QLVH_PJ18_READ',[token,selection],30000).then(r=>{
+ const promise=TD01_rpc('QLVH_PJ18_READ_R17',[token,selection],30000).then(r=>{
   if(seq!==pj18Seq||key!==PJ18_key())throw Error('STALE');
-  if(!r||r.ok!==true||r.project!==selection||!Array.isArray(r.rows)||!Array.isArray(r.projects))throw Error(r?.code||'DATA_UNAVAILABLE');
+  if(!r||r.ok!==true||r.version!=='PJ18_READ_R17'||r.project!==selection||!Array.isArray(r.rows)||!Array.isArray(r.projects))throw Error(r?.code||'R17_READ_UNAVAILABLE');
   PJ18_syncProjects(r.projects);
    if(r.rows.some(x=>!user.projects.includes(x.project)||x.status==='DELETED'||(selection!=='ALL'&&x.project!==selection)))throw Error('SCOPE_MISMATCH');
   pj18State={key,rows:r.rows.map(PJ18_map),total:Number(r.total)||0,truncated:!!r.truncated,at:Date.now(),actorType:r.actorType};
@@ -2740,7 +2753,7 @@ function go(page){if(!user)return;if(activePage==='hoso'&&page!=='hoso'&&window.
   if(cv26Mode==='edit'&&!window.confirm('Hồ sơ đang sửa. Rời trang sẽ bỏ thay đổi chưa lưu. Tiếp tục?'))return;
   TD10_closePreview();
   if(cv26Mode!=='none'){TD13_clearEdit();$('draftDemoForm').reset();TD01_msg('');TD01_controls();}
- } if(page==='new'&&activePage!=='new'&&typeof window.QLVH_CV08_resetMode==='function')window.QLVH_CV08_resetMode();if(!(activePage==='detail'&&page==='records'))listPage=1;if(page==='processwork'&&activePage!=='processwork'&&typeof window.QLVH_XL02_defaultActive==='function')window.QLVH_XL02_defaultActive();activePage=page;closeMenu();for(const el of document.querySelectorAll('.page'))el.classList.toggle('active',el.id==='page-'+page);for(const el of document.querySelectorAll('.nav-link[data-page],.mobile-bottom button[data-go]'))el.classList.toggle('active',(el.dataset.page||el.dataset.go)===(page==='detail'?'records':page));const cv19Work=['dashboard','records','new','processwork','reportwork','pending','detail'].includes(page);const cv19Sub=$('cv19-work-sub'),cv19Parent=$('cv19-work-parent');if(cv19Sub)cv19Sub.hidden=!cv19Work;if(cv19Parent){cv19Parent.classList.toggle('active',cv19Work);cv19Parent.setAttribute('aria-expanded',String(cv19Work));}$('topTitle').textContent=pageNames[page]||page;if(page!=='detail')render();window.scrollTo(0,0);if(typeof window.QLVH_CV08_refresh==='function')window.QLVH_CV08_refresh()}
+ } if(page==='new'&&activePage!=='new'&&typeof window.QLVH_CV08_resetMode==='function')window.QLVH_CV08_resetMode();if(page==='processwork'&&activePage!=='processwork'&&typeof window.QLVH_XL02_defaultActive==='function')window.QLVH_XL02_defaultActive();activePage=page;closeMenu();for(const el of document.querySelectorAll('.page'))el.classList.toggle('active',el.id==='page-'+page);for(const el of document.querySelectorAll('.nav-link[data-page],.mobile-bottom button[data-go]'))el.classList.toggle('active',(el.dataset.page||el.dataset.go)===(page==='detail'?'records':page));const cv19Work=['dashboard','records','new','processwork','reportwork','pending','detail'].includes(page);const cv19Sub=$('cv19-work-sub'),cv19Parent=$('cv19-work-parent');if(cv19Sub)cv19Sub.hidden=!cv19Work;if(cv19Parent){cv19Parent.classList.toggle('active',cv19Work);cv19Parent.setAttribute('aria-expanded',String(cv19Work));}$('topTitle').textContent=pageNames[page]||page;if(page!=='detail')render();window.scrollTo(0,0);if(typeof window.QLVH_CV08_refresh==='function')window.QLVH_CV08_refresh()}
 /* PJ40: UI only, read current selection already authorized by the server. */
 function PJ40_updateProjectHeader_(){
  const el=$('headerSelectedProject');if(!el||!user)return;
@@ -3172,25 +3185,22 @@ function renderList(items){
  items=CV42_displayRows(items);
  CV31_syncFilters(items);
  CV34_syncAvailableFields(items);
- const result=filtered(items),size=6,totalPages=Math.max(1,Math.ceil(result.length/size));
- listPage=Math.min(listPage,totalPages);
- const subset=result.slice((listPage-1)*size,listPage*size);
- $('recordRows').innerHTML=subset.map((r,i)=>{
-  const serial=(listPage-1)*size+i+1;
+ const result=filtered(items);
+ // UI16: all authorized records shown in the existing vertical scroller; no pagination.
+ $('recordRows').innerHTML=result.map((r,i)=>{
+  const serial=i+1;
   return `<tr><td class="cv30-tt"><strong>${serial}</strong><span class="cv30-code" title="Mã hồ sơ">${esc(r.id)}</span></td><td>${CV30_location(r)}</td><td>${CV30_equipment(r)}</td><td>${CV30_description(r)}</td><td>${priorityTag(r.priority)}</td><td class="cv30-due${CV25_dueDays(r)<0?' cv37-overdue-date':''}"${CV25_dueDays(r)<0?' title="Quá hạn hoàn thành"':''}>${esc(fmt(r.due))}</td><td class="cv39-status">${statusTag(r.status,r.route)}</td><td class="cv30-action">${CV25_draftActions(r)}</td></tr>`;
  }).join('');
- $('mobileRecords').innerHTML=subset.map((r,i)=>{
-  const serial=(listPage-1)*size+i+1;
+ $('mobileRecords').innerHTML=result.map((r,i)=>{
+  const serial=i+1;
   return `<article class="mobile-record cv30-mobile-record"><div class="cv30-mobile-top"><span class="cv30-mobile-serial">TT ${serial} · ${esc(r.id)}</span><span>${statusTag(r.status,r.route)}</span></div><div class="cv30-mobile-body"><div class="cv30-mobile-section"><h4>Tòa / Khu vực / Vị trí</h4>${CV30_location(r)}</div><div class="cv30-mobile-section"><h4>Hệ thống / Hạng mục / Loại thiết bị</h4>${CV30_equipment(r)}</div><div class="cv30-mobile-section"><h4>Hiện trạng / Nguyên nhân / Phương án</h4>${CV30_description(r)}</div><div class="cv30-mobile-section cv30-mobile-footer"><div><h4>Phân loại</h4>${priorityTag(r.priority)}</div><div><h4>Hạn xử lý</h4><strong class="${CV25_dueDays(r)<0?'cv37-overdue-date':''}">${esc(fmt(r.due))}</strong></div></div></div><div class="cv30-mobile-actions">${CV25_draftActions(r)}</div></article>`;
  }).join('');
- if(!subset.length){
+ if(!result.length){
   $('recordRows').innerHTML='<tr><td colspan="8"><div class="empty-state">'+icon('search')+'<h3>Không tìm thấy hồ sơ</h3><p>Thử thay đổi bộ lọc hoặc từ khóa.</p></div></td></tr>';
   $('mobileRecords').innerHTML='<div class="empty-state">'+icon('search')+'<h3>Không tìm thấy hồ sơ</h3><p>Thử thay đổi bộ lọc hoặc từ khóa.</p></div>';
  }
- $('recordCountLabel').textContent=`${result.length} hồ sơ QLVH TEST${result.length!==items.length?' (đã lọc)':''}${PJ18_cached()?.truncated?' · Danh sách chỉ tải 400 hồ sơ đầu tiên; số tổng hợp ở Dashboard là toàn bộ':''}${CV42_hint()}`;
- $('listPageNum').textContent=`${listPage} / ${totalPages}`;
- $('prevRecords').disabled=listPage===1;
- $('nextRecords').disabled=listPage===totalPages;
+ $('recordCountLabel').textContent=`${result.length} hồ sơ QLVH TEST${result.length!==items.length?' (đã lọc)':''}${PJ18_cached()?.truncated?' · Danh sách chỉ tải 400 hồ sơ đầu tiên; số tổng hợp ở Dashboard là toàn bộ':''}${CV42_hint()} · UI19 SCROLL`;
+
 }
 /** TD16 — live, read-only TEST queues. No approval write is exposed. */
 async function TD16_pendingLoad(){
@@ -3277,16 +3287,16 @@ function closeDetail(){
  go(back);
 }
 function logout(){PJ18_reset();TD01_reset();NS01_resetCache();NS01_clear();if(activePage==='detail'){$('page-detail').classList.remove('active');activePage='records';}closeMenu();user=null;activeProject='';$('application').classList.add('hidden');$('draftDemoForm').reset();$('recordQuery').value='';$('recordStatus').value='ALL';$('recordPriority').value='ALL';CV31_resetDynamic();CV34_resetDate();if(typeof window.ERH_AUTH_logout==='function')window.ERH_AUTH_logout();}
-$('logoutBtn').addEventListener('click',logout);$('topUser').addEventListener('click',()=>notice(`${user.code} · ${user.label} · quyền dự án do máy chủ kiểm tra`));$('activeProject').addEventListener('change',e=>{if(!user||!(user.projects.includes(e.target.value)||(e.target.value==='ALL'&&user.projects.length>1)))return;if(tdBusy||tdPending||ns02aBusy||ns02bBusy||xl01Busy){e.target.value=activeProject;notice('Đang lưu hồ sơ, vui lòng chờ xác nhận.');return;}if((PJ18_dirtyForm()||(activePage==='hoso'&&window.QLVH_HS12_dirty?.()))&&!window.confirm('Biểu mẫu có dữ liệu chưa lưu. Chuyển dự án sẽ bỏ nội dung chưa lưu. Tiếp tục?')){e.target.value=activeProject;return;}activeProject=e.target.value;PJ18_reset();listPage=1;if(activePage==='detail')go('dashboard');else render();notice(`Đang xem ${activeProject==='ALL'?'tất cả dự án được cấp':(projects[activeProject]?.name||activeProject)}`) });
+$('logoutBtn').addEventListener('click',logout);$('topUser').addEventListener('click',()=>notice(`${user.code} · ${user.label} · quyền dự án do máy chủ kiểm tra`));$('activeProject').addEventListener('change',e=>{if(!user||!(user.projects.includes(e.target.value)||(e.target.value==='ALL'&&user.projects.length>1)))return;if(tdBusy||tdPending||ns02aBusy||ns02bBusy||xl01Busy){e.target.value=activeProject;notice('Đang lưu hồ sơ, vui lòng chờ xác nhận.');return;}if((PJ18_dirtyForm()||(activePage==='hoso'&&window.QLVH_HS12_dirty?.()))&&!window.confirm('Biểu mẫu có dữ liệu chưa lưu. Chuyển dự án sẽ bỏ nội dung chưa lưu. Tiếp tục?')){e.target.value=activeProject;return;}activeProject=e.target.value;PJ18_reset();if(activePage==='detail')go('dashboard');else render();notice(`Đang xem ${activeProject==='ALL'?'tất cả dự án được cấp':(projects[activeProject]?.name||activeProject)}`) });
 $('menuButton').addEventListener('click',()=>{$('sidebar').classList.add('open');$('menuMask').classList.add('show')});$('mobileMenuTrigger').addEventListener('click',()=>{$('sidebar').classList.add('open');$('menuMask').classList.add('show')});$('menuMask').addEventListener('click',closeMenu);
 document.addEventListener('click',e=>{const tab=e.target.closest('button[data-pj19-status]');if(tab&&tab.closest('#page-dashboard'))PJ19_openStatus(tab.dataset.pj19Status);});
 document.addEventListener('click',e=>{const act=e.target.closest('button[data-cv25-draft]');if(act){CV25_openDraftFromList(act.dataset.id,act.dataset.cv25Draft);}});
 document.addEventListener('click',e=>{const nav=e.target.closest('[data-go],.nav-link[data-page],button[data-open],button[data-project]');if(!nav)return;if(nav.dataset.open){const id=nav.dataset.open,key=PJ18_key();if(PJ18_cached())openDetail(id);else {notice('Đang tải chi tiết hồ sơ…');PJ18_fetch().then(()=>{if(key===PJ18_key())openDetail(id);}).catch(()=>{if(key===PJ18_key())notice('Chưa tải được chi tiết hồ sơ.');});}return}if(nav.dataset.project){if(!user||!user.projects.includes(nav.dataset.project))return;activeProject=nav.dataset.project;$('activeProject').value=activeProject;go('dashboard');return}const page=nav.dataset.go||nav.dataset.page;if(page)go(page)});
-$('cv34-date-field').addEventListener('change',()=>{listPage=1;renderList(available());});
-$('cv34-date-mode').addEventListener('change',()=>{CV34_dateModeChanged();listPage=1;renderList(available());});
-$('cv34-date-value').addEventListener('input',()=>{listPage=1;renderList(available());});
+$('cv34-date-field').addEventListener('change',()=>{renderList(available());});
+$('cv34-date-mode').addEventListener('change',()=>{CV34_dateModeChanged();renderList(available());});
+$('cv34-date-value').addEventListener('input',()=>{renderList(available());});
 CV34_dateModeChanged();
-$('recordQuery').addEventListener('input',()=>{listPage=1;renderList(available())});CV31_FILTERS.forEach(f=>$(f.id).addEventListener('change',()=>{listPage=1;renderList(available())}));$('recordStatus').addEventListener('change',()=>{listPage=1;renderList(available())});$('recordPriority').addEventListener('change',()=>{listPage=1;renderList(available())});$('resetFilters').addEventListener('click',()=>{$('recordQuery').value='';$('recordStatus').value='ALL';$('recordPriority').value='ALL';CV31_resetDynamic();CV34_resetDate();listPage=1;renderList(available())});$('prevRecords').addEventListener('click',()=>{if(listPage>1){listPage--;renderList(available())}});$('nextRecords').addEventListener('click',()=>{listPage++;renderList(available())});$('refreshDemo').addEventListener('click',()=>{PJ18_load(true);CV42_load(true);notice('Đang làm mới danh sách từ QLVH TEST...')});
+$('recordQuery').addEventListener('input',()=>{renderList(available())});CV31_FILTERS.forEach(f=>$(f.id).addEventListener('change',()=>{renderList(available())}));$('recordStatus').addEventListener('change',()=>{renderList(available())});$('recordPriority').addEventListener('change',()=>{renderList(available())});$('resetFilters').addEventListener('click',()=>{$('recordQuery').value='';$('recordStatus').value='ALL';$('recordPriority').value='ALL';CV31_resetDynamic();CV34_resetDate();renderList(available())});$('refreshDemo').addEventListener('click',()=>{PJ18_load(true);CV42_load(true);notice('Đang làm mới danh sách từ QLVH TEST...')});
 
 /* PJ25: 60s refresh while visible, and revalidate after tab/window resumes.
  * No timers run on backend; no data writes. Always use live session + project guards. */
