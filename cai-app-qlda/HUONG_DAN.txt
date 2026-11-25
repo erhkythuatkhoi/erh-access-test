@@ -1,7 +1,8 @@
-BỘ CÀI QLDA TEST V3 – 25/11/2026
-1. URL Web App QLDA TEST /exec đã điền theo đường dẫn người dùng cung cấp. Không cần sửa launcher-config.js. Chưa kiểm tra truy cập thực tế.
-2. Chỉ upload thư mục cai-app-qlda vào nguồn xuất bản Pages; không ghi đè file gốc hoặc cai-app-tong.
-3. Đường dẫn dự kiến: https://erhkythuatkhoi.github.io/erh-access-test/cai-app-qlda/
-4. V2 khóa đăng ký SW ngoài đúng thư mục; cache riêng, không xóa cache nào; không dùng cache ứng dụng khác; không sửa đăng nhập.
-5. URL Apps Script khác origin có thể mở ngoài cửa sổ standalone.
-6. Chưa deploy, chưa test thiết bị. Kiểm tra cả hai icon cùng tồn tại và mở đúng app trước khi PASS.
+BỘ CÀI QLDA V4 – 25/11/2026
+1. Chỉ thay các file trong thư mục cai-app-qlda. Không thay thư mục gốc, cai-app-tong hoặc cấu hình Pages.
+2. Tên ứng dụng: ERH – QUẢN LÝ DỰ ÁN. Giữ nguyên hình icon và URL Web App.
+3. Manifest ID tuyệt đối tương đương ID V3 đã resolve; scope riêng; start_url riêng. Không tạo ID mới tránh nhân đôi QLDA.
+4. Không tự chuyển sang Apps Script khi cài hoặc khi mở icon. Mở Web App bằng nút MỞ APP QLDA (tab/cửa sổ riêng).
+5. Cài tại https://erhkythuatkhoi.github.io/erh-access-test/cai-app-qlda/ bằng Chrome/Edge thường, không mở từ cửa sổ App Khối. Ctrl+F5; xác nhận trang V4. Kiểm tra danh sách ứng dụng của đúng trình duyệt/profile. Nếu đã cài QLDA V3, tên có thể cập nhật chậm; chỉ gỡ QLDA nếu chắc chắn nhận diện đúng, không gỡ App Khối.
+6. App Khối có scope rộng hơn bao trùm QLDA. Nếu còn bị nhận nhầm, dừng và chuyển QLDA sang repository Pages riêng (đường dẫn ngoài scope App Khối); không sửa App Khối.
+7. Không thể ẩn thông báo/địa chỉ do Google Apps Script hoặc trình duyệt quản lý bằng bộ cài này. Chưa TEST cài đặt thực tế.
