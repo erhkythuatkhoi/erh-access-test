@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta name="qlda-pwa-build" content="MASTER_TEST_20261127_V1_P1">
-<script src="./ql-da-bridge-v8.js?v=master-v1-p1-20261127"></script>
+<meta name="qlda-pwa-build" content="MASTER_TEST_20261127_V2">
+<script src="./ql-da-bridge-v8.js?v=master-v2-20261127"></script>
 <meta charset="utf-8">
-<meta name="qlvh-master-version" content="MASTER_TEST_20261127_V1_P1">
+<meta name="qlvh-master-version" content="MASTER_TEST_20261127_V2">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b68a9">
 <meta name="erh-ui-version" content="CV19_WORK_MENU_FINAL_20261123">
@@ -2711,7 +2711,7 @@ body.preview-compact #application .stat-card.pj19-stat{min-height:63px;padding:7
   <div id="td01-detail" aria-live="polite" style="margin-top:12px"></div>
 </article></section>
 <section class="page" id="page-processwork" aria-label="Xử lý công việc – XL02 TEST">
- <div class="xl01-head"><h1>Xử lý công việc <small>XL02 – MASTER V1 TEST</small></h1><button type="button" class="btn btn-white" id="xl01-refresh">Làm mới</button></div>
+ <div class="xl01-head"><h1>Xử lý công việc <small>XL02 – MASTER V2 TEST</small></h1><button type="button" class="btn btn-white" id="xl01-refresh">Làm mới</button></div>
  <div class="xl01-fixed">
   <div class="xl01-stats" id="xl01-stats" aria-label="Thống kê xử lý công việc"><button type="button" data-xl-filter="ALL"><small>Tất cả</small><b>–</b></button><button type="button" data-xl-filter="DRAFT"><small>Nháp</small><b>–</b></button><button type="button" data-xl-filter="WAITING"><small>Cần tiếp nhận</small><b>–</b></button><button type="button" data-xl-filter="RECEIVED"><small>Đã tiếp nhận</small><b>–</b></button><button type="button" data-xl-filter="ASSIGNED"><small>Đã phân công</small><b>–</b></button><button type="button" data-xl-filter="IN_PROGRESS"><small>Đang thực hiện</small><b>–</b></button><button type="button" data-xl-filter="OVERDUE"><small>Quá hạn</small><b>–</b></button><button type="button" data-xl-filter="PENDING_APPROVAL"><small>Chờ duyệt</small><b>–</b></button><button type="button" data-xl-filter="APPROVED"><small>Đã duyệt</small><b>–</b></button><button type="button" data-xl-filter="REWORK"><small>Làm lại</small><b>–</b></button><button type="button" data-xl-filter="CLOSED"><small>Đã đóng</small><b>–</b></button></div>
   <div class="xl01-filters"><label for="xl01-search">Tìm công việc</label><input id="xl01-search" type="search" placeholder="Mã hồ sơ, hệ thống, vị trí, hiện trạng…" autocomplete="off"/><label for="xl01-status">Tình trạng</label><select id="xl01-status"><option value="ACTIVE">Cần xử lý (mặc định)</option><option value="ALL">Tất cả</option><option value="DRAFT">Nháp</option><option value="WAITING">Cần tiếp nhận</option><option value="RECEIVED">Đã tiếp nhận</option><option value="ASSIGNED">Đã phân công</option><option value="IN_PROGRESS">Đang thực hiện</option><option value="OVERDUE">Quá hạn</option><option value="PENDING_APPROVAL">Chờ duyệt</option><option value="APPROVED">Đã duyệt</option><option value="REWORK">Làm lại</option><option value="CLOSED">Đã đóng</option></select></div>
@@ -3147,6 +3147,17 @@ function masterNotice(txt,type='info',owner='general'){
  if(type!=='busy'&&type!=='error')toastTimer=setTimeout(()=>x.classList.remove('show'),2000);
 }
 function masterNoticeEnd(owner){const x=$('toast');if(x?.dataset.owner===owner&&x.dataset.type==='busy'){clearTimeout(toastTimer);x.classList.remove('show');}}
+// MASTER V2: shared confirmation; no native blocking dialog for the tested actions.
+let masterConfirmOpen=false;
+window.QLVH_MASTER_CONFIRM=function(message,positive='OK',cancelLabel='Hủy',color='primary'){
+ if(masterConfirmOpen)return Promise.resolve(false);
+ masterConfirmOpen=true;const d=document.createElement('dialog'),previous=document.activeElement;
+ d.id='master-v2-confirm';d.setAttribute('aria-labelledby','master-v2-confirm-title');
+ d.style.cssText='border:1px solid #cbdce9;border-radius:10px;background:white;color:#17466b;width:min(410px,calc(100vw - 32px));padding:22px;box-shadow:0 12px 36px #19395533;text-align:center';
+ d.innerHTML='<h2 id="master-v2-confirm-title" style="margin:0 0 12px;font-size:20px">Thông báo!</h2><p style="white-space:pre-line;margin:0 0 18px;line-height:1.5"></p><form method="dialog" style="display:flex;gap:8px;justify-content:center"><button type="submit" value="yes" class="btn btn-primary" style="min-height:36px;border-radius:6px"></button><button type="submit" value="no" class="btn btn-white" style="min-height:36px;border-radius:6px" autofocus></button></form>';
+ d.querySelector('p').textContent=String(message);const yes=d.querySelector('[value=yes]'),no=d.querySelector('[value=no]');yes.textContent=positive;if(color==='green')yes.style.background='#15803d';no.textContent=cancelLabel;no.hidden=!cancelLabel;if(!cancelLabel){no.removeAttribute('autofocus');yes.autofocus=true;}
+ return new Promise(resolve=>{let done=false;const finish=ok=>{if(done)return;done=true;d.remove();masterConfirmOpen=false;try{previous?.focus({preventScroll:true});}catch(_){}resolve(ok);};d.addEventListener('close',()=>finish(d.returnValue==='yes'),{once:true});d.addEventListener('cancel',e=>{e.preventDefault();d.close('no');});document.body.appendChild(d);try{d.showModal();}catch(e){finish(false);}});
+};
 window.QLVH_MASTER_NOTICE=masterNotice;window.QLVH_MASTER_NOTICE_END=masterNoticeEnd;
 function notice(txt){masterNotice(txt);}
 function available(){if(!user)return[];const s=PJ18_cached();return s?s.rows:[];}
@@ -4344,6 +4355,7 @@ function xl12Relevant(x){
  if(XK10.ready&&XK10.rows.some(r=>r.docId===x?.doc?.id&&r.status==='PENDING_KHOI'&&r.recipient===user?.code))return true;
  if(x?.sourceOnly)return false; // unverified source documents never become an actionable task
  const s=x?.flow?.stage,route=String(x?.doc?.route||'').toUpperCase();
+ if(s==='CLOSED'&&x.flow.allowed?.rework)return true;
  if(route==='KHOI'&&['WAITING','RECEIVED','ASSIGNED','IN_PROGRESS','PENDING_APPROVAL','REWORK','APPROVED'].includes(s))return true;
  return ['ASSIGNED','IN_PROGRESS','REWORK'].includes(s)&&
   (x?.flow?.assignee===user?.code||x?.flow?.support===user?.code);
@@ -4395,6 +4407,7 @@ function actionText(x){
  const a=x.flow.allowed||{};
  if(a.receive)return 'Tiếp nhận';if(a.assign)return 'Phân công';
  if(a.start)return 'Bắt đầu';if(a.save||a.submit)return 'Báo cáo';
+ if(x.flow.stage==='CLOSED')return 'Xem';
  if(a.rework||a.approve||a.approveClose)return 'Phê duyệt';if(a.close)return 'Đóng';return 'Xem';
 }
 function actionMarkup(x){const label=actionText(x),id=E(x.doc.id);
@@ -4785,7 +4798,7 @@ async function xl03FileDelete(fileId){if(!XL03.canDelete||xl01Busy)return;if(!co
 function rid(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');}
 function masterPending(action){
  const d=V('master-pending-dialog'),field=V('xl02-pending'),old=field.value,projectKey=scope(),id=XL01.selectedId;
- const rework=action==='REWORK';V('master-pending-title').textContent=rework?'Yêu cầu làm lại':'Gửi phê duyệt';V('master-pending-label').textContent=rework?'Lý do yêu cầu làm lại *':'Nội dung tồn đọng / Ý kiến (không bắt buộc)';V('master-pending-confirm').textContent=rework?'Gửi yêu cầu':'Gửi phê duyệt';field.disabled=false;field.required=rework;
+ const rework=action==='REWORK';V('master-pending-title').textContent=rework?'Yêu cầu làm lại':'Gửi phê duyệt';V('master-pending-label').textContent=rework?'Lý do yêu cầu làm lại *':'Nội dung tồn đọng / Ý kiến (không bắt buộc)';V('master-pending-confirm').textContent=rework?'Gửi yêu cầu':'Gửi phê duyệt';field.disabled=false;field.required=rework;if(rework)field.value='';
  const cancel=()=>{field.value=old;d.close();};V('master-pending-cancel').onclick=cancel;d.oncancel=e=>{e.preventDefault();cancel();};
  V('master-pending-confirm').onclick=()=>{if(rework&&!field.value.trim()){field.focus();field.reportValidity();return;}if(scope()!==projectKey||XL01.selectedId!==id){cancel();return;}d.close();apply(action,true);};
  if(!d.open)d.showModal();field.focus();
@@ -4808,7 +4821,9 @@ async function apply(action,confirmed=false){
   if(!XK10.ready){xl03Toast('Chưa xác minh trạng thái vướng mắc Khối. Bấm Làm mới trước khi duyệt – đóng.','error');return;}
   if(xk10Pending(x.doc.id)){xl03Toast('Công việc đang chờ Khối phản hồi, chưa thể duyệt – đóng.','error');return;}
   if(!String(x.flow.result||'').trim()){xl03Toast('Chưa có kết quả đã lưu.','error');return;}
-  if(!confirm('Xác nhận duyệt và đóng hồ sơ '+x.doc.id+' (tiến độ '+Number(x.flow.progress||0)+'%). Giữ nguyên kết quả thực tế; xác nhận không còn vướng mắc cần Khối xử lý?'))return;
+  const confirmScope=scope(),confirmId=x.doc.id,confirmVersion=x.flow.version;
+  if(!await window.QLVH_MASTER_CONFIRM('Xác nhận phê duyệt và đóng công việc?\nGiữ nguyên khối lượng và tỷ lệ hoàn thành thực tế; xác nhận không còn vướng mắc cần Khối xử lý.','Duyệt – Đóng','Hủy','green'))return;
+  if(xl01Busy||scope()!==confirmScope||XL01.selectedId!==confirmId||activePage!=='processwork'||XL01.items.find(z=>z.doc.id===confirmId)?.flow?.version!==confirmVersion)return;
   inp.confirmNoIssues=true;
  }
  const requestId=rid(),key=scope(),id=x.doc.id;
@@ -5949,8 +5964,7 @@ async function openSaved(key,edit){if(S.listBusy||S.busy||!key)return;
  // chuyển ngay sang luồng tải nguồn công việc như lập báo cáo mới.
  if(edit){
   if(!S.canEditSaved){signalAction('Chỉ người lập báo cáo mới được sửa. Báo cáo này vẫn ở chế độ xem.');return;}
-  signal('BC02 R42 · Đang tải lại danh mục công việc và trạng thái mới nhất cho chế độ Sửa…');
-  await startEdit(true);
+  await startEdit(false);
   return;
  }
  if(S.canEditSaved&&!S.editMode)await sigRead();
@@ -5988,10 +6002,12 @@ async function syncXL02(){
 async function startEdit(skipConfirm){
  if(!S.loaded||S.status!=='SAVED'||!S.canEditSaved||!S.openKey){signalAction('Chỉ người báo cáo được sửa báo cáo đã lưu.');return;}
  if(S.busy||S.sigBusy||S.pending){signalAction('Còn thao tác chưa kết thúc. Kiểm tra trước khi sửa báo cáo.');return;}
- if(!skipConfirm&&!confirm('Mở chế độ Sửa sẽ cập nhật lại danh mục công việc và trạng thái hiện tại từ TD01/XL01/XL02/XL03 theo kỳ báo cáo.\nBáo cáo V'+S.version+' và chữ ký cũ được giữ nguyên; chỉ khi bấm Lưu thay đổi mới tạo phiên bản mới. Tiếp tục?'))return;
+ var editScope=[ctx().token,ctx().project,S.openKey,S.version].join('|');
+ if(!skipConfirm&&!await window.QLVH_MASTER_CONFIRM('Xác nhận sửa báo cáo và cập nhật lại danh mục công việc?','Sửa báo cáo','Hủy'))return;
+ if(!active()||S.busy||S.sigBusy||S.pending||editScope!==[ctx().token,ctx().project,S.openKey,S.version].join('|'))return;
  var c=ctx(),key=S.openKey,version=S.version,seq=++S.seq;
- S.busy=true;setLocked();signal('Đang tải lại danh mục và trạng thái công việc mới nhất để sửa báo cáo…');
- var r=await bc02Rpc('QLVH_BC02_EDIT_LOAD_R40',[c.token,c.project,key,version],75000);
+ S.busy=true;setLocked();window.QLVH_MASTER_NOTICE('Đang tải lại dữ liệu báo cáo...','busy','bc02-edit');
+ var r;try{r=await bc02Rpc('QLVH_BC02_EDIT_LOAD_R40',[c.token,c.project,key,version],75000);}catch(e){r={ok:false,code:'RPC_FAILED'};}finally{window.QLVH_MASTER_NOTICE_END('bc02-edit');}
  if(seq!==S.seq||!active()||c.token!==ctx().token||c.project!==ctx().project||key!==S.openKey||version!==S.version)return;
  S.busy=false;
  if(!r?.ok){setLocked();signalAction('BC02 R42 · Không thể nạp danh mục để Sửa ('+(r?.code||'RPC_FAILED')+(r?.phase?' – '+r.phase:'')+'). Bản SAVED vẫn nguyên vẹn. Hãy kiểm tra đã thêm QLVH_BC02_Sua_LamMoiDanhMuc_TEST.gs và cập nhật đúng phiên bản /exec hay chưa.');return;}
@@ -6019,6 +6035,7 @@ async function cancelEdit(){if(!S.editMode)return;if(S.dirty&&!confirm('Hủy th
 function changePeriod(type){if(S.dirty&&!confirm('Báo cáo chưa lưu. Chuyển kỳ và bỏ thay đổi?'))return;S.period=type;root.querySelectorAll('[data-period]').forEach(function(b){b.classList.toggle('bc02-current',b.dataset.period===type);});S.dirty=false;S.pending=null;fetchData(true);}
 async function save(status){if(S.status==='SAVED'&&!S.editMode){signalAction('Báo cáo đã lưu. Chỉ người báo cáo mới được chọn Sửa để tạo phiên bản mới.');return;}if(S.editMode&&status==='DRAFT'){signalAction('Đang sửa báo cáo đã lưu. Chọn Lưu thay đổi để ghi phiên bản mới, không dùng Lưu nháp.');return;}if(!S.loaded){signal('Chưa tải dữ liệu báo cáo, không thể lưu.',true);return;}if(S.busy)return;if(!$('reporter').value.trim()||!$('report-date').value){signal('Nhập Người báo cáo và Ngày báo cáo trước khi lưu.',true);return;}
  
+ if(status==='SAVED'&&!await masterPlanCheck())return;
  var c=ctx(),payload=currentPayload(),raw=JSON.stringify(payload),pk=[c.project,S.period,S.start,S.end,S.editMode?'revise':'create'].join('|');if(S.pending&&S.pending.key!==pk)S.pending=null;
  if(S.pending&&S.pending.raw!==raw){signal('Có lượt lưu trước chưa xác nhận. Hãy tải lại báo cáo đã lưu để đối chiếu trước khi tiếp tục.',true);return;}
  if(!S.pending)S.pending={key:pk,raw:raw,rid:id(),version:S.version,status:status,payload:payload};
@@ -6026,7 +6043,7 @@ async function save(status){if(S.status==='SAVED'&&!S.editMode){signalAction('B�
  S.busy=true;$('save').disabled=$('save-draft').disabled=true;renderTables();signal('Đang lưu bản báo cáo vào Google Sheets TEST...');
  var r;try{r=await (S.editMode?bc02Rpc('QLVH_BC02_EDIT_SAVE_R40',[c.token,c.project,S.openKey,S.pending.payload,S.pending.rid,S.pending.version],75000):bc02Rpc('QLVH_BC02_SAVE',[c.token,c.project,S.period,S.start,S.end,status,S.pending.payload,S.pending.rid,S.pending.version],65000));}catch(e){r={ok:false,code:'RPC_FAILED'};}
  S.busy=false;$('save').disabled=$('save-draft').disabled=false;renderTables();
- if(!r?.ok){var ec=r?.code||'RPC_FAILED';var advice=ec==='SOURCE_CHANGED'?'Danh mục hoặc trạng thái công việc đã thay đổi từ lúc chọn Sửa; hãy Hủy sửa và chọn Sửa báo cáo lại để xem dữ liệu mới.':ec==='STALE_VERSION'?'Báo cáo đã có phiên bản mới; hãy mở Báo cáo đã lưu để tải lại.':ec==='BC02_FUNCTION_MISSING'?'Máy chủ chưa được bổ sung GS sửa báo cáo R40.':'';signal('Chưa xác nhận lưu ('+ec+'). Không bấm lưu nhiều lần khi chưa kiểm tra. '+advice,true);return;}
+ if(!r?.ok){var ec=r?.code||'RPC_FAILED';if(ec==='PLAN_SELECTION_REQUIRED'){S.pending=null;setLocked();if(!(S.groups.next||[]).length){signalAction('Danh mục kế hoạch đã thay đổi. Hãy tải lại báo cáo trước khi lưu.');return;}if(!(S.groups.next||[]).some(function(x){return S.planSelected.has(String(x.id));})){await masterPlanCheck();return;}signalAction('Danh mục kế hoạch đã thay đổi. Hãy tải lại báo cáo trước khi lưu.');return;}var advice=ec==='SOURCE_CHANGED'?'Danh mục hoặc trạng thái công việc đã thay đổi từ lúc chọn Sửa; hãy Hủy sửa và chọn Sửa báo cáo lại để xem dữ liệu mới.':ec==='STALE_VERSION'?'Báo cáo đã có phiên bản mới; hãy mở Báo cáo đã lưu để tải lại.':ec==='BC02_FUNCTION_MISSING'?'Máy chủ chưa được bổ sung GS sửa báo cáo R40.':'';signal('Chưa xác nhận lưu ('+ec+'). Không bấm lưu nhiều lần khi chưa kiểm tra. '+advice,true);return;}
  S.version=r.version;S.status=r.status;S.pending=null;S.dirty=false;S.editMode=false;S.editFromLive=false;
  if(r.status==='SAVED'){
   // R26: SAVE/REVISE thành công là xác nhận máy chủ đã lưu cho tài khoản này.
@@ -6053,7 +6070,16 @@ async function save(status){if(S.status==='SAVED'&&!S.editMode){signalAction('B�
   }).catch(function(){});
  }
 }
-function showSaveConfirm(){if(S.status==='SAVED'&&!S.editMode){signalAction('Báo cáo đã lưu – chỉ người báo cáo mới được chọn Sửa để tạo phiên bản mới.');return;}if(!S.loaded||S.busy){signal('Chưa tải xong dữ liệu báo cáo để lưu.',true);return;}if(!$('reporter').value.trim()||!$('report-date').value){signal('Nhập Người báo cáo và Ngày báo cáo trước khi lưu.',true);return;}$('save-confirm').showModal();}
+var masterPlanFocusKey='';
+function masterPlanKey(){return [ctx().project,S.period,S.start,S.end,S.openKey,S.version].join('|');}
+async function masterPlanCheck(){
+ if(!(S.groups.next||[]).length||(S.groups.next||[]).some(function(r){return S.planSelected.has(String(r.id));}))return true;
+ var key=masterPlanKey();await window.QLVH_MASTER_CONFIRM('Vui lòng tích chọn công việc trong mục Kế hoạch tiếp theo.','OK','');
+ if(!active()||S.busy||key!==masterPlanKey())return false;
+ S.filter='all';makeStats();renderTables();masterPlanFocusKey=key;
+ var first=root.querySelector('.bc02-plan-check:not(:disabled)');if(first){first.scrollIntoView({block:'center',behavior:'smooth'});first.focus({preventScroll:true});}return false;
+}
+async function showSaveConfirm(){if(S.status==='SAVED'&&!S.editMode){signalAction('Báo cáo đã lưu – chỉ người báo cáo mới được chọn Sửa để tạo phiên bản mới.');return;}if(!S.loaded||S.busy){signal('Chưa tải xong dữ liệu báo cáo để lưu.',true);return;}if(!$('reporter').value.trim()||!$('report-date').value){signal('Nhập Người báo cáo và Ngày báo cáo trước khi lưu.',true);return;}if(!await masterPlanCheck())return;if(active()&&!S.busy)$('save-confirm').showModal();}
 function printable(pdf){
  if(!S.loaded||S.status!=='SAVED'||S.editMode||S.dirty||S.busy||S.sigBusy||S.sigLoading){signalAction(S.sigBusy||S.sigLoading?'Đang xử lý chữ ký; chỉ In / Xuất PDF sau khi xử lý xong.':S.editMode?'Đang Sửa báo cáo. Cần Lưu thay đổi thành công trước khi In / Xuất PDF.':'Chỉ được In / Xuất PDF sau khi đã Lưu báo cáo chính thức thành công.');return;}
  if(S.sigReadError&&!confirm('Chưa xác minh được ảnh chữ ký đã gắn. In/Xuất PDF có thể thiếu chữ ký. Vẫn tiếp tục?'))return;
@@ -6080,6 +6106,7 @@ function setup(){if(S.setup)return;S.setup=true;$('anchor').value=dateNow();$('r
  if(!(S.groups.next||[]).some(function(r){return String(r.id)===planId;}))return;
  if(el.checked)S.planSelected.add(planId);else S.planSelected.delete(planId);
  mark();renderTables();
+ if(masterPlanFocusKey===masterPlanKey()&&S.planSelected.size){masterPlanFocusKey='';$('save').focus();$('save').scrollIntoView({block:'nearest'});}
  });
  $('saved-list-open').addEventListener('click',listSaved);
  $('list-close').addEventListener('click',function(){savedView(false);});
