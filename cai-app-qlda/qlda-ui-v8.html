@@ -6174,10 +6174,42 @@ async function masterPlanCheck(){
  var first=root.querySelector('.bc02-plan-check:not(:disabled)');if(first){first.scrollIntoView({block:'center',behavior:'smooth'});first.focus({preventScroll:true});}return false;
 }
 async function showSaveConfirm(){if(S.status==='SAVED'&&!S.editMode){signalAction('Báo cáo đã lưu – chỉ người báo cáo mới được chọn Sửa để tạo phiên bản mới.');return;}if(!S.loaded||S.busy){signal('Chưa tải xong dữ liệu báo cáo để lưu.',true);return;}if(!$('reporter').value.trim()||!$('report-date').value){signal('Nhập Người báo cáo và Ngày báo cáo trước khi lưu.',true);return;}if(!await masterPlanCheck())return;if(active()&&!S.busy)$('save-confirm').showModal();}
+/* BC02 FILE-NAME R5 – chỉ ảnh hưởng tên PDF khi bấm Xuất file PDF.
+   Tên: BCCV_TUẦN|THÁNG|QUÝ|NĂM_YYYY.MM.DD_MÃ-DỰ-ÁN.pdf
+   Ngày lấy từ trường Ngày báo cáo của bản đã lưu; mã dự án từ danh mục đã cấp quyền.
+   Do dùng window.print(), trình duyệt quyết định tên gợi ý trong hộp thoại Lưu PDF. */
+function bc02PdfFileBase(){
+ var period={week:'TUẦN',month:'THÁNG',quarter:'QUÝ',year:'NĂM'}[S.period];
+ if(!period)return '';
+ var date=iso($('report-date').value);
+ var project=String(S.project||'').trim().toUpperCase();
+ if(!date||!project||!/^[A-Z0-9_-]{1,40}$/.test(project))return '';
+ return 'BCCV_'+period+'_'+date.replace(/-/g,'.')+'_'+project;
+}
 function printable(pdf){
  if(!S.loaded||S.status!=='SAVED'||S.editMode||S.dirty||S.busy||S.sigBusy||S.sigLoading){signalAction(S.sigBusy||S.sigLoading?'Đang xử lý chữ ký; chỉ In / Xuất PDF sau khi xử lý xong.':S.editMode?'Đang Sửa báo cáo. Cần Lưu thay đổi thành công trước khi In / Xuất PDF.':'Chỉ được In / Xuất PDF sau khi đã Lưu báo cáo chính thức thành công.');return;}
  if(S.sigReadError&&!confirm('Chưa xác minh được ảnh chữ ký đã gắn. In/Xuất PDF có thể thiếu chữ ký. Vẫn tiếp tục?'))return;
- var old=S.filter;S.filter='all';makeStats();renderTables();setTimeout(function(){try{window.print();}finally{setTimeout(function(){S.filter=old;makeStats();renderTables();},500);}},25);
+ var filename=pdf?bc02PdfFileBase():'';
+ if(pdf&&!filename){signalAction('Không xác định được Kỳ, Ngày báo cáo hoặc Mã dự án để đặt tên PDF. Kiểm tra thông tin báo cáo trước khi xuất.');return;}
+ var old=S.filter;S.filter='all';makeStats();renderTables();
+ // Giữ tên trong suốt hộp thoại Print/Save as PDF; chỉ trả lại khi kết thúc.
+ var titleBefore=document.title,restored=false,timeoutId=null;
+ function restoreTitle(){
+  if(restored)return;restored=true;
+  window.removeEventListener('afterprint',restoreTitle);
+  if(timeoutId!==null)clearTimeout(timeoutId);
+  if(filename&&document.title===filename)document.title=titleBefore;
+ }
+ if(filename){
+  document.title=filename;
+  window.addEventListener('afterprint',restoreTitle);
+  // Dự phòng trình duyệt không phát afterprint (không ảnh hưởng dữ liệu báo cáo).
+  timeoutId=setTimeout(restoreTitle,120000);
+ }
+ setTimeout(function(){
+  try{window.print();}catch(e){restoreTitle();signalAction('Trình duyệt không mở được hộp thoại in/xuất PDF.');}
+  finally{setTimeout(function(){S.filter=old;makeStats();renderTables();},500);}
+ },25);
 }
 function reset(){
  if(!$('saved-list').hidden){savedView(false);return;}
