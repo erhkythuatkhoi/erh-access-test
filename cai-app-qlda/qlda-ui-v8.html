@@ -6174,40 +6174,71 @@ async function masterPlanCheck(){
  var first=root.querySelector('.bc02-plan-check:not(:disabled)');if(first){first.scrollIntoView({block:'center',behavior:'smooth'});first.focus({preventScroll:true});}return false;
 }
 async function showSaveConfirm(){if(S.status==='SAVED'&&!S.editMode){signalAction('Báo cáo đã lưu – chỉ người báo cáo mới được chọn Sửa để tạo phiên bản mới.');return;}if(!S.loaded||S.busy){signal('Chưa tải xong dữ liệu báo cáo để lưu.',true);return;}if(!$('reporter').value.trim()||!$('report-date').value){signal('Nhập Người báo cáo và Ngày báo cáo trước khi lưu.',true);return;}if(!await masterPlanCheck())return;if(active()&&!S.busy)$('save-confirm').showModal();}
-/* BC02 FILE-NAME R5 – chỉ ảnh hưởng tên PDF khi bấm Xuất file PDF.
-   Tên: BCCV_TUẦN|THÁNG|QUÝ|NĂM_YYYY.MM.DD_MÃ-DỰ-ÁN.pdf
-   Ngày lấy từ trường Ngày báo cáo của bản đã lưu; mã dự án từ danh mục đã cấp quyền.
-   Do dùng window.print(), trình duyệt quyết định tên gợi ý trong hộp thoại Lưu PDF. */
-function bc02PdfFileBase(){
+/* BC02 PDF FILENAME R7 — window.print inside Google Apps Script iframe may use
+   the HOST title. A standalone about:blank print document has its OWN stable title.
+   This changes only the PDF export path; the existing In button stays unchanged. */
+function bc02PdfFilename(){
  var period={week:'TUẦN',month:'THÁNG',quarter:'QUÝ',year:'NĂM'}[S.period];
- if(!period)return '';
  var date=iso($('report-date').value);
  var project=String(S.project||'').trim().toUpperCase();
- if(!date||!project||!/^[A-Z0-9_-]{1,40}$/.test(project))return '';
+ if(!period||!date||!/^[A-Z0-9][A-Z0-9_-]{0,39}$/.test(project))return '';
  return 'BCCV_'+period+'_'+date.replace(/-/g,'.')+'_'+project;
 }
+function bc02OpenPdfPrintWindow(filename){
+ // Open synchronously within the user's click to avoid popup blockers.
+ var w=window.open('','_blank');
+ if(!w)return false;
+ try{
+  var title=filename; // Chrome Save as PDF uses this popup's title.
+  w.document.open();
+  w.document.write('<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title></head><body><div id="erh-bc02-pdf-toolbar" role="toolbar"><strong id="erh-bc02-pdf-file"></strong><button type="button" id="erh-bc02-pdf-save">In / Lưu PDF</button><span>Nếu hộp thoại không tự mở, bấm In / Lưu PDF (hoặc Ctrl+P).</span></div><div id="application" class="app-shell"><main class="main"><div class="workspace" id="erh-bc02-pdf-host"></div></main></div></body></html>');
+  w.document.close();
+  w.document.title=title;
+  var clone=root.cloneNode(true),original=root.querySelectorAll('input,textarea,select'),copied=clone.querySelectorAll('input,textarea,select');
+  original.forEach(function(n,i){var c=copied[i];if(!c)return;
+   if(n.tagName==='TEXTAREA')c.textContent=n.value;
+   else if(n.tagName==='INPUT'){
+    if(n.type==='checkbox'||n.type==='radio'){
+     if(n.checked)c.setAttribute('checked','checked');else c.removeAttribute('checked');
+    }else if(n.type!=='file')c.setAttribute('value',n.value);
+   }else if(n.tagName==='SELECT'){
+    Array.from(c.options).forEach(function(opt,j){if(j===n.selectedIndex)opt.setAttribute('selected','selected');else opt.removeAttribute('selected');});
+   }
+  });
+  clone.classList.add('active');clone.removeAttribute('hidden');
+  var form=clone.querySelector('#bc02-form');if(form)form.hidden=false;
+  var saved=clone.querySelector('#bc02-saved-list');if(saved)saved.remove();
+  var host=w.document.getElementById('erh-bc02-pdf-host');host.appendChild(clone);
+  document.querySelectorAll('head style').forEach(function(style){w.document.head.appendChild(style.cloneNode(true));});
+  var extra=w.document.createElement('style');extra.textContent='@media screen{#erh-bc02-pdf-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;background:#eaf4fc;border-bottom:1px solid #bed7e9;font:14px Arial,sans-serif;color:#1a4260}#erh-bc02-pdf-save{font:700 14px Arial,sans-serif;border:0;border-radius:6px;padding:10px 14px;background:#086bb0;color:#fff;cursor:pointer}#application .main{margin-left:0;width:100%;padding-top:0}#application .workspace{max-width:none}}@media print{#erh-bc02-pdf-toolbar{display:none!important}}';w.document.head.appendChild(extra);
+  var runPrint=function(){try{if(w&&!w.closed){w.focus();w.print();}}catch(ignore){}};
+  w.document.getElementById('erh-bc02-pdf-save').addEventListener('click',runPrint);
+  w.document.getElementById('erh-bc02-pdf-file').textContent=title+'.pdf';
+  // Do not revert this title after printing: Chrome may read it at Save As time.
+  // Wait for copied signature/logo images to decode before printing.
+  var images=Array.from(w.document.images);
+  var ready=images.map(function(img){if(img.complete)return Promise.resolve();return new Promise(function(resolve){img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});});});
+  var fonts=w.document.fonts&&w.document.fonts.ready?w.document.fonts.ready.catch(function(){}):Promise.resolve();
+  Promise.race([Promise.all([fonts].concat(ready)),new Promise(function(resolve){setTimeout(resolve,2500);})]).then(function(){setTimeout(runPrint,150);});
+  return true;
+ }catch(err){try{w.close();}catch(ignore){}console.error('[BC02_PDF_R7]',String(err&&err.message||err));return false;}
+}
 function printable(pdf){
+ if(S.livePreview){signalAction('Đang xem dữ liệu hiện tại, chưa phải bản báo cáo đã lưu. Mở Báo cáo đã lưu để In / Xuất PDF, hoặc Sửa báo cáo rồi Lưu thay đổi.');return;}
  if(!S.loaded||S.status!=='SAVED'||S.editMode||S.dirty||S.busy||S.sigBusy||S.sigLoading){signalAction(S.sigBusy||S.sigLoading?'Đang xử lý chữ ký; chỉ In / Xuất PDF sau khi xử lý xong.':S.editMode?'Đang Sửa báo cáo. Cần Lưu thay đổi thành công trước khi In / Xuất PDF.':'Chỉ được In / Xuất PDF sau khi đã Lưu báo cáo chính thức thành công.');return;}
  if(S.sigReadError&&!confirm('Chưa xác minh được ảnh chữ ký đã gắn. In/Xuất PDF có thể thiếu chữ ký. Vẫn tiếp tục?'))return;
- var filename=pdf?bc02PdfFileBase():'';
- if(pdf&&!filename){signalAction('Không xác định được Kỳ, Ngày báo cáo hoặc Mã dự án để đặt tên PDF. Kiểm tra thông tin báo cáo trước khi xuất.');return;}
+ var filename=pdf?bc02PdfFilename():'';
+ if(pdf&&!filename){signalAction('Thiếu kỳ báo cáo, ngày báo cáo hoặc mã dự án hợp lệ. Kiểm tra báo cáo đã lưu.');return;}
  var old=S.filter;S.filter='all';makeStats();renderTables();
- // Giữ tên trong suốt hộp thoại Print/Save as PDF; chỉ trả lại khi kết thúc.
- var titleBefore=document.title,restored=false,timeoutId=null;
- function restoreTitle(){
-  if(restored)return;restored=true;
-  window.removeEventListener('afterprint',restoreTitle);
-  if(timeoutId!==null)clearTimeout(timeoutId);
-  if(filename&&document.title===filename)document.title=titleBefore;
+ if(pdf){
+  var started=bc02OpenPdfPrintWindow(filename);
+  S.filter=old;makeStats();renderTables();
+  if(!started)signalAction('Chrome chưa mở được cửa sổ PDF. Hãy cho phép cửa sổ bật lên (pop-ups) cho trang QLDA rồi thử lại.');
+  return;
  }
- if(filename){
-  document.title=filename;
-  window.addEventListener('afterprint',restoreTitle);
-  // Dự phòng trình duyệt không phát afterprint (không ảnh hưởng dữ liệu báo cáo).
-  timeoutId=setTimeout(restoreTitle,120000);
- }
+ // In (không phải Xuất PDF): giữ nguyên luồng in đã PASS.
  setTimeout(function(){
-  try{window.print();}catch(e){restoreTitle();signalAction('Trình duyệt không mở được hộp thoại in/xuất PDF.');}
+  try{window.print();}catch(e){signalAction('Trình duyệt không mở được hộp thoại in.');}
   finally{setTimeout(function(){S.filter=old;makeStats();renderTables();},500);}
  },25);
 }
