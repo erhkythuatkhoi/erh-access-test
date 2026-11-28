@@ -2140,6 +2140,100 @@ body.preview-compact #application .stat-card.pj19-stat{min-height:63px;padding:7
 @media print{#toast,#page-reportwork .bc02-header,#page-reportwork .bc02-actions{display:none!important}#page-reportwork .bc02-report-heading h2{font-size:18pt!important}#page-reportwork .bc02-report-heading .bc02-period-caption{font-size:13pt!important}#page-reportwork .bc02-common label,#page-reportwork .bc02-common label input,#page-reportwork .bc02-common #bc02-project-name,#page-reportwork .bc02-common #bc02-reporter,#page-reportwork .bc02-common #bc02-report-date-print{font-size:8.8pt!important;height:auto!important;min-height:0!important}}
 #page-reportwork .bc02-header .bc02-message[data-state=draft],#page-reportwork .bc02-header .bc02-message[data-state=info]{color:#086bb0!important}#page-reportwork .bc02-header .bc02-message[data-state=saved]{color:#15803d!important}
 </style>
+
+<!-- QLDA V8 / BC02 MOBILE TABLE SCROLL R4 (2026-11-28): presentation only, screen <=900px. -->
+<style id="erh-bc02-mobile-table-scroll-r4">
+@media screen and (max-width:900px) {
+  /* Giữ 4 bảng báo cáo dạng bảng desktop, chỉ trượt ngang phần dữ liệu. */
+  #application #page-reportwork #bc02-report-tables,
+  #application #page-reportwork #bc02-report-tables > .bc02-part {
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+  #application #page-reportwork .bc02-parthead {
+    flex-wrap:wrap !important;
+    gap:4px 10px !important;
+  }
+  #application #page-reportwork .bc02-parthead::after {
+    content:"↔ Vuốt ngang để xem đủ các cột";
+    flex:0 0 100%;
+    color:#4e7390;
+    font-size:11px;
+    font-weight:650;
+    line-height:1.35;
+  }
+  #application #page-reportwork .bc02-tablewrap {
+    box-sizing:border-box !important;
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scrollbar-width:auto;
+    scrollbar-color:#6b9ab9 #e2edf5;
+    padding-bottom:4px;
+  }
+  #application #page-reportwork .bc02-tablewrap::-webkit-scrollbar {height:11px;}
+  #application #page-reportwork .bc02-tablewrap::-webkit-scrollbar-track {background:#e2edf5;border-radius:8px;}
+  #application #page-reportwork .bc02-tablewrap::-webkit-scrollbar-thumb {background:#6b9ab9;border:2px solid #e2edf5;border-radius:8px;}
+  #application #page-reportwork .bc02-table {
+    display:table !important;
+    table-layout:fixed !important;
+    border-collapse:collapse !important;
+    width:1450px !important;
+    min-width:1450px !important;
+    max-width:none !important;
+    font-size:12px !important;
+  }
+  #application #page-reportwork .bc02-table colgroup {display:table-column-group !important;}
+  #application #page-reportwork .bc02-table thead {display:table-header-group !important;}
+  #application #page-reportwork .bc02-table tbody {display:table-row-group !important;}
+  #application #page-reportwork .bc02-table tr {display:table-row !important;}
+  #application #page-reportwork .bc02-table th,
+  #application #page-reportwork .bc02-table td {
+    box-sizing:border-box !important;
+    padding:7px 5px !important;
+    font-size:12px !important;
+    line-height:1.4 !important;
+    white-space:normal !important;
+    word-break:normal !important;
+    overflow-wrap:break-word !important;
+    vertical-align:top !important;
+  }
+  #application #page-reportwork .bc02-table th {text-align:center !important;}
+  #application #page-reportwork .bc02-table td.bc02-content {
+    /* Vô hiệu thu nhỏ chữ một hàng của R29 trên mobile để đọc đủ nội dung. */
+    font-size:12px !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:break-word !important;
+    word-break:normal !important;
+    letter-spacing:normal !important;
+  }
+  #application #page-reportwork .bc02-table td.bc02-person,
+  #application #page-reportwork .bc02-table td.bc02-date {
+    font-size:12px !important;
+    white-space:normal !important;
+    overflow-wrap:break-word !important;
+  }
+  #application #page-reportwork .bc02-table .bc02-plan-choice,
+  #application #page-reportwork .bc02-table .bc02-plan-saved {
+    white-space:normal !important;
+    font-size:12px !important;
+  }
+  #application #page-reportwork .bc02-table .bc02-plan-choice input[type="checkbox"] {
+    width:16px !important;
+    height:16px !important;
+    flex-basis:16px !important;
+  }
+}
+</style>
 </head>
 <body class="preview-compact">
 <!-- Icon sprite; no network/CDN dependencies -->
